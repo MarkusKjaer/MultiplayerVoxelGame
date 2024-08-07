@@ -1,7 +1,7 @@
 ﻿using System;
 using OpenTK.Mathematics;
 
-namespace CubeEngine
+namespace CubeEngine.Engine
 {
     public class Camera
     {

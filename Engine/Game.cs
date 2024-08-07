@@ -1,8 +1,8 @@
 ﻿using System;
-using CubeEngine.Window;
+using CubeEngine.Engine.Window;
 using OpenTK.Mathematics;
 
-namespace CubeEngine
+namespace CubeEngine.Engine
 {
     public sealed class Game
     {

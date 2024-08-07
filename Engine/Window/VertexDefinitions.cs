@@ -1,7 +1,7 @@
 ﻿using System;
 using OpenTK.Mathematics;
 
-namespace CubeEngine.Window
+namespace CubeEngine.Engine.Window
 {
     public readonly struct VertexAttribute(string name, int index, int componentCount, int offset)
     {

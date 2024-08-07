@@ -2,7 +2,7 @@
 using System.Xml.Linq;
 using OpenTK.Graphics.OpenGL;
 
-namespace CubeEngine.Window
+namespace CubeEngine.Engine.Window
 {
     public readonly struct ShaderUniform(string name, int location, ActiveUniformType type)
     {
@@ -31,29 +31,29 @@ namespace CubeEngine.Window
 
         public ShaderProgram(string vertexShaderCode, string pixelShaderCode)
         {
-            this.dispored = false;
+            dispored = false;
 
-            if (!ShaderProgram.CompileVertexShader(vertexShaderCode, out this.VertexShaderHandle, out string vertexShaderCompileError))
+            if (!CompileVertexShader(vertexShaderCode, out VertexShaderHandle, out string vertexShaderCompileError))
             {
                 throw new ArgumentException(vertexShaderCompileError);
             }
 
-            if (!ShaderProgram.CompilePixelShader(pixelShaderCode, out this.PixelShaderHandle, out string pixelShaderCompileError))
+            if (!CompilePixelShader(pixelShaderCode, out PixelShaderHandle, out string pixelShaderCompileError))
             {
                 throw new ArgumentException(pixelShaderCompileError);
             }
 
-            this.ShaderProgramHandle = ShaderProgram.CreateLinkProgram(VertexShaderHandle, PixelShaderHandle);
+            ShaderProgramHandle = CreateLinkProgram(VertexShaderHandle, PixelShaderHandle);
 
-            this.uniforms = ShaderProgram.CreateUniformList(this.ShaderProgramHandle);
-            this.attributes = ShaderProgram.CreateAttributeList(this.ShaderProgramHandle);
+            uniforms = CreateUniformList(ShaderProgramHandle);
+            attributes = CreateAttributeList(ShaderProgramHandle);
 
 
         }
 
         ~ShaderProgram()
         {
-            this.Dispose();
+            Dispose();
         }
 
         public void Dispose()
@@ -63,11 +63,11 @@ namespace CubeEngine.Window
                 return;
             }
 
-            GL.DeleteShader(this.VertexShaderHandle);
-            GL.DeleteShader(this.PixelShaderHandle);
+            GL.DeleteShader(VertexShaderHandle);
+            GL.DeleteShader(PixelShaderHandle);
 
             GL.UseProgram(0);
-            GL.DeleteProgram(this.ShaderProgramHandle);
+            GL.DeleteProgram(ShaderProgramHandle);
 
             dispored = true;
             GC.SuppressFinalize(this);
@@ -75,21 +75,21 @@ namespace CubeEngine.Window
 
         public ShaderUniform[] GetUniformList()
         {
-            ShaderUniform[] result = new ShaderUniform[this.uniforms.Length];
-            Array.Copy(this.uniforms, result, this.uniforms.Length);
+            ShaderUniform[] result = new ShaderUniform[uniforms.Length];
+            Array.Copy(uniforms, result, uniforms.Length);
             return result;
         }
 
         public ShaderAttribute[] GetAttributeList()
         {
-            ShaderAttribute[] result = new ShaderAttribute[this.attributes.Length];
-            Array.Copy(this.attributes, result, this.attributes.Length);
+            ShaderAttribute[] result = new ShaderAttribute[attributes.Length];
+            Array.Copy(attributes, result, attributes.Length);
             return result;
         }
 
         public void SetUnitform(string name, float v1)
         {
-            if (!this.GetShaderUnitform(name, out ShaderUniform uniform))
+            if (!GetShaderUnitform(name, out ShaderUniform uniform))
             {
                 throw new ArgumentException("Name was not found");
             }
@@ -99,14 +99,14 @@ namespace CubeEngine.Window
                 throw new ArgumentException("Uniform type is not float");
             }
 
-            GL.UseProgram(this.ShaderProgramHandle);
+            GL.UseProgram(ShaderProgramHandle);
             GL.Uniform1(uniform.Location, v1);
             GL.UseProgram(0);
         }
 
         public void SetUnitform(string name, float v1, float v2)
         {
-            if (!this.GetShaderUnitform(name, out ShaderUniform uniform))
+            if (!GetShaderUnitform(name, out ShaderUniform uniform))
             {
                 throw new ArgumentException("Name was not found");
             }
@@ -116,14 +116,14 @@ namespace CubeEngine.Window
                 throw new ArgumentException("Uniform type is not float");
             }
 
-            GL.UseProgram(this.ShaderProgramHandle);
+            GL.UseProgram(ShaderProgramHandle);
             GL.Uniform2(uniform.Location, v1, v2);
             GL.UseProgram(0);
         }
 
         public void SetUnitform(string name, float v1, float v2, float v3)
         {
-            if (!this.GetShaderUnitform(name, out ShaderUniform uniform))
+            if (!GetShaderUnitform(name, out ShaderUniform uniform))
             {
                 throw new ArgumentException("Name was not found");
             }
@@ -133,14 +133,14 @@ namespace CubeEngine.Window
                 throw new ArgumentException("Uniform type is not float");
             }
 
-            GL.UseProgram(this.ShaderProgramHandle);
+            GL.UseProgram(ShaderProgramHandle);
             GL.Uniform3(uniform.Location, v1, v2, v3);
             GL.UseProgram(0);
         }
 
         public void SetUnitform(string name, OpenTK.Mathematics.Matrix4 matrix)
         {
-            if (!this.GetShaderUnitform(name, out ShaderUniform uniform))
+            if (!GetShaderUnitform(name, out ShaderUniform uniform))
             {
                 throw new ArgumentException("Name was not found");
             }
@@ -150,7 +150,7 @@ namespace CubeEngine.Window
                 throw new ArgumentException("Uniform type is not float");
             }
 
-            GL.UseProgram(this.ShaderProgramHandle);
+            GL.UseProgram(ShaderProgramHandle);
             GL.UniformMatrix4(uniform.Location, true, ref matrix);
             GL.UseProgram(0);
         }
@@ -159,9 +159,9 @@ namespace CubeEngine.Window
         {
             uniform = new ShaderUniform();
 
-            for (int i = 0; i < this.uniforms.Length; i++)
+            for (int i = 0; i < uniforms.Length; i++)
             {
-                uniform = this.uniforms[i];
+                uniform = uniforms[i];
 
                 if (name == uniform.Name)
                 {
@@ -182,7 +182,7 @@ namespace CubeEngine.Window
 
             string vertexShaderInfo = GL.GetShaderInfoLog(vertexShaderHandle);
 
-            if (vertexShaderInfo != String.Empty)
+            if (vertexShaderInfo != string.Empty)
             {
                 errorMesage = vertexShaderInfo;
                 return false;
@@ -200,7 +200,7 @@ namespace CubeEngine.Window
 
             string pixelShaderInfo = GL.GetShaderInfoLog(pixelShaderHandle);
 
-            if (pixelShaderInfo != String.Empty)
+            if (pixelShaderInfo != string.Empty)
             {
                 errorMesage = pixelShaderInfo;
                 return false;

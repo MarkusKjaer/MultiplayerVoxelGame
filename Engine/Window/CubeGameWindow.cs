@@ -1,13 +1,16 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using CubeEngine.Engine;
+using CubeEngine.Engine.Mesh;
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using static System.Net.Mime.MediaTypeNames;
 
 
-namespace CubeEngine.Window
+namespace CubeEngine.Engine.Window
 {
     public sealed class CubeGameWindow : GameWindow
     {
@@ -40,9 +43,9 @@ namespace CubeEngine.Window
                 APIVersion = new Version(3, 3),
             })
         {
-            this.activeCamera = camera;
-            this.windowWidth = width;
-            this.windowheight = height;
+            activeCamera = camera;
+            windowWidth = width;
+            windowheight = height;
 
             CenterWindow();
         }
@@ -55,12 +58,23 @@ namespace CubeEngine.Window
 
         protected override void OnLoad()
         {
+
+            OBJFileReader oBJFileReader = new OBJFileReader();
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
+            string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
+
+            MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
+
             IsVisible = true;
             GL.Enable(EnableCap.DepthTest);
 
-            VertexPositionColor[] vertices = new VertexPositionColor[8];
-            this.vertexCount += 8;
+            vertexCount += meshInfo.vertexCount;
 
+            /*
+            VertexPositionColor[] vertices = new VertexPositionColor[8];
+            vertexCount += 8;
+            
             Color4 red = Color4.Red;
             Color4 blue = Color4.Blue;
 
@@ -94,42 +108,50 @@ namespace CubeEngine.Window
                 0, 4, 5,
                 5, 1, 0
             ];
-            this.indexCount += 36;
+            
+            indexCount += 36;
+            
+            vertexBuffer = new VertexBuffer(VertexPositionColor.vertexInfo, vertices.Length, true);
+            vertexBuffer.SetData(vertices, vertices.Length);
 
-            this.vertexBuffer = new VertexBuffer(VertexPositionColor.vertexInfo, vertices.Length, true);
-            this.vertexBuffer.SetData(vertices, vertices.Length);
+            indexBuffer = new(indices.Length, true);
+            indexBuffer.SetData(indices, indices.Length);
+            */
 
-            this.indexBuffer = new(indices.Length, true);
-            this.indexBuffer.SetData(indices, indices.Length);
+            indexCount += meshInfo.indexCount;
 
-            this.vertexArray = new VertexArray(this.vertexBuffer, this.indexBuffer);
+            vertexBuffer = new VertexBuffer(VertexPositionTexture.vertexInfo, meshInfo.vertexCount, true);
+            vertexBuffer.SetData(meshInfo.vertices, meshInfo.vertexCount);
+
+            indexBuffer = new(meshInfo.indexCount, true);
+            indexBuffer.SetData(meshInfo.indices, meshInfo.indexCount);
+
+            vertexArray = new VertexArray(vertexBuffer, indexBuffer);
 
             string vertexShaderCode = File.ReadAllText("C:\\CSharp_DEV\\OpenTKCube\\OpenTKCube\\Window\\Shaders\\Cube.vert");
             string pixelShaderCode = File.ReadAllText("C:\\CSharp_DEV\\OpenTKCube\\OpenTKCube\\Window\\Shaders\\Cube.frag");
 
-            this.shaderProgram = new(vertexShaderCode, pixelShaderCode);
+            shaderProgram = new(vertexShaderCode, pixelShaderCode);
 
             Matrix4 model = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(0f));
             Matrix4 view = activeCamera.GetCurrentView();
 
 
-            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90.0f), (float)this.windowWidth / (float)this.windowheight, 0.1f, 100.0f);
+            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90.0f), windowWidth / (float)windowheight, 0.1f, 100.0f);
 
-            this.shaderProgram.SetUnitform("model", model);
-            this.shaderProgram.SetUnitform("view", view);
-            this.shaderProgram.SetUnitform("projection", projection);
-            
-
+            shaderProgram.SetUnitform("model", model);
+            shaderProgram.SetUnitform("view", view);
+            shaderProgram.SetUnitform("projection", projection);
 
             base.OnLoad();
         }
 
         protected override void OnUnload()
         {
-            this.vertexArray?.Dispose();
-            this.indexBuffer?.Dispose();
-            this.vertexBuffer?.Dispose();
-            this.shaderProgram?.Dispose();
+            vertexArray?.Dispose();
+            indexBuffer?.Dispose();
+            vertexBuffer?.Dispose();
+            shaderProgram?.Dispose();
 
             base.OnUnload();
         }
@@ -138,7 +160,7 @@ namespace CubeEngine.Window
         {
             test += 0.01f;
             Matrix4 model = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(test));
-            this.shaderProgram.SetUnitform("model", model);
+            shaderProgram.SetUnitform("model", model);
             base.OnUpdateFrame(args);
         }
 
@@ -148,13 +170,13 @@ namespace CubeEngine.Window
             GL.ClearColor(new Color4(0.1f, 0.8f, 0.8f, 1f));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            GL.UseProgram(this.shaderProgram.ShaderProgramHandle);
+            GL.UseProgram(shaderProgram.ShaderProgramHandle);
 
-            GL.BindVertexArray(this.vertexArray.VertexArrayHandle);
-            GL.DrawElements(PrimitiveType.Triangles, this.indexCount, DrawElementsType.UnsignedInt, 0);
+            GL.BindVertexArray(vertexArray.VertexArrayHandle);
+            GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
 
-            
-            this.Context.SwapBuffers();
+
+            Context.SwapBuffers();
 
             base.OnRenderFrame(args);
         }

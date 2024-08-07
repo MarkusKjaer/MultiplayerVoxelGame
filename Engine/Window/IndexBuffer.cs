@@ -1,7 +1,7 @@
 ﻿using System;
 using OpenTK.Graphics.OpenGL;
 
-namespace CubeEngine.Window
+namespace CubeEngine.Engine.Window
 {
     public sealed class IndexBuffer : IDisposable
     {

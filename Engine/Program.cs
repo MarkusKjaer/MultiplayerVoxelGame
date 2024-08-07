@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CubeEngine
+namespace CubeEngine.Engine
 {
     class Program
     {
