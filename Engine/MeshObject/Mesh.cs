@@ -6,16 +6,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CubeEngine.Engine.Mesh
+namespace CubeEngine.Engine.MeshObject
 {
     public class Mesh
     {
+        private MeshInfo meshInfo;
+
+        public Mesh(MeshInfo meshInfo)
+        {
+            this.meshInfo = meshInfo;
+        }
+
         public void Load()
         {
 
         }
 
         public void Unload()
+        {
+
+        }
+
+        public void Render()
         {
 
         }
