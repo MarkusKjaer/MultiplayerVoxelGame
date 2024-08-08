@@ -3,6 +3,7 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
+using System.IO;
 
 namespace CubeEngine.Engine.Window
 {
@@ -75,8 +76,8 @@ namespace CubeEngine.Engine.Window
 
             vertexArray = new VertexArray(vertexBuffer, indexBuffer);
 
-            string vertexShaderCode = File.ReadAllText("C:\\CSharp_DEV\\OpenTKCube\\OpenTKCube\\Window\\Shaders\\Cube.vert");
-            string pixelShaderCode = File.ReadAllText("C:\\CSharp_DEV\\OpenTKCube\\OpenTKCube\\Window\\Shaders\\Cube.frag");
+            string vertexShaderCode = File.ReadAllText(Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "Cube.vert"));
+            string pixelShaderCode = File.ReadAllText(Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "Cube.frag"));
 
             shaderProgram = new(vertexShaderCode, pixelShaderCode);
 
@@ -106,7 +107,8 @@ namespace CubeEngine.Engine.Window
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
             test += 0.01f;
-            Matrix4 model = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(test));
+            Matrix4 model;
+            Matrix4.CreateFromAxisAngle(new(1, 1, 0), MathHelper.DegreesToRadians(test), out model);
             shaderProgram.SetUnitform("model", model);
             base.OnUpdateFrame(args);
         }
@@ -117,9 +119,11 @@ namespace CubeEngine.Engine.Window
             GL.ClearColor(new Color4(0.1f, 0.8f, 0.8f, 1f));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            GL.UseProgram(shaderProgram.ShaderProgramHandle);
 
+            GL.UseProgram(shaderProgram.ShaderProgramHandle);
+            
             GL.BindVertexArray(vertexArray.VertexArrayHandle);
+
             GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
 
 

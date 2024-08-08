@@ -8,7 +8,7 @@ namespace CubeEngine.Engine
     {
         public void Run()
         {
-            Camera camera = new Camera(new(1f, 1f, -1f));
+            Camera camera = new Camera(new(2f, 0f, -2f));
             using CubeGameWindow gameWindow = new(camera);
             gameWindow.Run();
         }
