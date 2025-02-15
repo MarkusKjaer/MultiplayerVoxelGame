@@ -1,6 +1,8 @@
 ﻿using CubeEngine.Engine.Window;
 using OpenTK.Mathematics;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks.Dataflow;
 
 namespace CubeEngine.Engine.MeshObject
 {
@@ -16,13 +18,15 @@ namespace CubeEngine.Engine.MeshObject
                 string? line;
 
                 List<int> vertexIndices = [], normalIndices = [];
-                Dictionary<int, int> uvIndices = [];
+                List<int> uvIndices = [];
 
                 List <Vector3> vertices = [];
                 List<int> indices = [];
                 List<Vector3> normals = [];
 
                 List<Vector2> uvs = [];
+
+                int test = 0;
 
                 while ((line = sr.ReadLine()) != null)
                 {
@@ -51,7 +55,6 @@ namespace CubeEngine.Engine.MeshObject
                     }
                     else if (string.Equals(firstWord, "vn"))
                     {
-                        
                         Vector3 normal;
 
                         string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -60,7 +63,6 @@ namespace CubeEngine.Engine.MeshObject
                         normal.Z = float.Parse(parts[3]);
 
                         normals.Add(normal);
-                        
                     }
                     else if (string.Equals(firstWord, "f"))
                     {
@@ -75,19 +77,30 @@ namespace CubeEngine.Engine.MeshObject
                         {
                             FourFace(parts, vertexIndices, uvIndices, normalIndices);
                         }
-
                     }
                 }
-                List<VertexPositionTexture> verticePositionTextures = [];
 
-                for (int i = 0; i < vertices.Count; i++)
+                List<VertexPositionTexture> verticePositionTextures = [];
+                Dictionary<(int, int), int> uniqueVertices = new(); // Key: (vertexIndex, uvIndex), Value: new index
+
+                List<int> finalIndices = [];
+
+                for (int i = 0; i < vertexIndices.Count; i++)
                 {
-                    verticePositionTextures.Add(new(vertices[i], uvs[uvIndices[vertexIndices[i]]]));
+                    var key = (vertexIndices[i], uvIndices[i]);
+
+                    if (!uniqueVertices.TryGetValue(key, out int newIndex))
+                    {
+                        newIndex = verticePositionTextures.Count;
+                        uniqueVertices[key] = newIndex;
+                        verticePositionTextures.Add(new(vertices[vertexIndices[i]], uvs[uvIndices[i]]));
+                    }
+
+                    finalIndices.Add(newIndex);
                 }
 
-                List<Vector3> outVertices = [];
 
-                meshInfoToReturn = new([.. verticePositionTextures], [.. vertexIndices]);
+                meshInfoToReturn = new([.. verticePositionTextures], [.. finalIndices]);
             }
             catch (Exception e)
             {
@@ -99,7 +112,7 @@ namespace CubeEngine.Engine.MeshObject
             return meshInfoToReturn;
         }
 
-        private void ThreeFace(string[] parts, List<int> vertexIndices, Dictionary<int, int> uvIndices, List<int> normalIndices)
+        private void ThreeFace(string[] parts, List<int> vertexIndices, List<int> uvIndices, List<int> normalIndices)
         {
             int[] vertexIndex = new int[3],
                     uvIndex = new int[3],
@@ -124,14 +137,11 @@ namespace CubeEngine.Engine.MeshObject
             for (int i = 0; i < 3; i++)
             {
                 vertexIndices.Add(vertexIndex[i] - 1);
-                if(!uvIndex.Contains(i))
-                {
-                    uvIndices.TryAdd(vertexIndex[i] - 1, uvIndex[i] - 1);
-                }
+                uvIndices.Add(uvIndex[i] - 1);
                 normalIndices.Add(normalIndex[i] - 1);
             }
         }
-        private void FourFace(string[] parts, List<int> vertexIndices, Dictionary<int, int> uvIndices, List<int> normalIndices)
+        private void FourFace(string[] parts, List<int> vertexIndices, List<int> uvIndices, List<int> normalIndices)
         {
             int[] vertexIndex = new int[6],
                   uvIndex = new int[6],
@@ -145,35 +155,29 @@ namespace CubeEngine.Engine.MeshObject
             vertexIndex[0] = int.Parse(firstVertex[0]);
             vertexIndex[1] = int.Parse(secondVertex[0]);
             vertexIndex[2] = int.Parse(thirdVertex[0]);
+            vertexIndex[3] = int.Parse(thirdVertex[0]);
+            vertexIndex[4] = int.Parse(fourthVertex[0]);
+            vertexIndex[5] = int.Parse(firstVertex[0]);
 
             uvIndex[0] = int.Parse(firstVertex[1]);
             uvIndex[1] = int.Parse(secondVertex[1]);
             uvIndex[2] = int.Parse(thirdVertex[1]);
+            uvIndex[3] = int.Parse(thirdVertex[1]);
+            uvIndex[4] = int.Parse(fourthVertex[1]);
+            uvIndex[5] = int.Parse(firstVertex[1]);
 
             normalIndex[0] = int.Parse(firstVertex[2]);
             normalIndex[1] = int.Parse(secondVertex[2]);
             normalIndex[2] = int.Parse(thirdVertex[2]);
-
-            vertexIndex[3] = int.Parse(firstVertex[0]);
-            vertexIndex[4] = int.Parse(thirdVertex[0]);
-            vertexIndex[5] = int.Parse(fourthVertex[0]);
-
-            uvIndex[3] = int.Parse(firstVertex[1]);
-            uvIndex[4] = int.Parse(thirdVertex[1]);
-            uvIndex[5] = int.Parse(fourthVertex[1]);
-
-            normalIndex[3] = int.Parse(firstVertex[2]);
-            normalIndex[4] = int.Parse(thirdVertex[2]);
-            normalIndex[5] = int.Parse(fourthVertex[2]);
+            normalIndex[3] = int.Parse(thirdVertex[2]);
+            normalIndex[4] = int.Parse(fourthVertex[2]);
+            normalIndex[5] = int.Parse(firstVertex[2]);
 
             for (int i = 0; i < 6; i++)
             {
                 vertexIndices.Add(vertexIndex[i] - 1);
 
-                if (!uvIndices.ContainsKey(vertexIndex[i] - 1))
-                {
-                    uvIndices.TryAdd(vertexIndex[i] - 1, uvIndex[i] - 1);
-                }
+                uvIndices.Add(uvIndex[i] - 1);
 
                 normalIndices.Add(normalIndex[i] - 1);
             }
