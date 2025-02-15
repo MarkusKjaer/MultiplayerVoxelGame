@@ -1,10 +1,4 @@
 ﻿using CubeEngine.Engine.Window;
-using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CubeEngine.Engine.MeshObject
 {
@@ -35,18 +29,18 @@ namespace CubeEngine.Engine.MeshObject
 
     public readonly struct MeshInfo
     {
-        public readonly int vertexCount;
-        public readonly int indexCount;
-        public readonly VertexPositionTexture[] vertices;
-        public readonly int[] indices;
+        public readonly int VertexCount { get; }
+        public readonly int IndexCount { get; }
+        public readonly VertexPositionTexture[] Vertices { get; }
+        public readonly int[] Indices {  get; }
 
         public MeshInfo(VertexPositionTexture[] vertexPositions, int[] indices)
         {
-            vertices = vertexPositions;
-            vertexCount = vertices.Length;
+            Vertices = vertexPositions;
+            VertexCount = Vertices.Length;
 
-            this.indices = indices;
-            indexCount = indices.Length;
+            this.Indices = indices;
+            IndexCount = indices.Length;
 
         }
     }

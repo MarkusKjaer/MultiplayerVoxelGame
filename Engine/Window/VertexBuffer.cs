@@ -35,8 +35,6 @@ namespace CubeEngine.Engine.Window
                 hint = BufferUsageHint.StreamDraw;
             }
 
-            int vertexSizeInBytes = VertexPositionColor.vertexInfo.SizeInBytes;
-
             VertexBufferHandle = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferHandle);
             GL.BufferData(BufferTarget.ArrayBuffer, VertexCount * VertexInfo.SizeInBytes, nint.Zero, hint);
@@ -87,6 +85,7 @@ namespace CubeEngine.Engine.Window
             GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferHandle);
             GL.BufferSubData(BufferTarget.ArrayBuffer, nint.Zero, count * VertexInfo.SizeInBytes, data);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+
         }
 
     }

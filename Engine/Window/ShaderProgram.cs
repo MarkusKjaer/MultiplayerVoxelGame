@@ -1,6 +1,4 @@
-﻿using System;
-using System.Xml.Linq;
-using OpenTK.Graphics.OpenGL;
+﻿using OpenTK.Graphics.OpenGL;
 
 namespace CubeEngine.Engine.Window
 {

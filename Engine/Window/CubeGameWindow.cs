@@ -4,6 +4,7 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using System.IO;
+using StbImageSharp;
 
 namespace CubeEngine.Engine.Window
 {
@@ -13,6 +14,8 @@ namespace CubeEngine.Engine.Window
         private IndexBuffer indexBuffer;
         private VertexArray vertexArray;
         private ShaderProgram shaderProgram;
+
+        private int textureID;
 
         private Camera activeCamera;
 
@@ -64,15 +67,15 @@ namespace CubeEngine.Engine.Window
             IsVisible = true;
             GL.Enable(EnableCap.DepthTest);
 
-            vertexCount += meshInfo.vertexCount;
+            vertexCount += meshInfo.VertexCount;
 
-            indexCount += meshInfo.indexCount;
+            indexCount += meshInfo.IndexCount;
 
-            vertexBuffer = new VertexBuffer(VertexPositionTexture.vertexInfo, meshInfo.vertexCount, true);
-            vertexBuffer.SetData(meshInfo.vertices, meshInfo.vertexCount);
+            vertexBuffer = new VertexBuffer(VertexPositionTexture.vertexInfo, meshInfo.VertexCount, true);
+            vertexBuffer.SetData(meshInfo.Vertices, meshInfo.VertexCount);
 
-            indexBuffer = new(meshInfo.indexCount, true);
-            indexBuffer.SetData(meshInfo.indices, meshInfo.indexCount);
+            indexBuffer = new(meshInfo.IndexCount, true);
+            indexBuffer.SetData(meshInfo.Indices, meshInfo.IndexCount);
 
             vertexArray = new VertexArray(vertexBuffer, indexBuffer);
 
@@ -90,6 +93,30 @@ namespace CubeEngine.Engine.Window
             shaderProgram.SetUnitform("model", model);
             shaderProgram.SetUnitform("view", view);
             shaderProgram.SetUnitform("projection", projection);
+
+
+            
+            
+
+            //Texture
+            textureID = GL.GenTexture();
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, textureID);
+
+            // texture parameters
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+
+            StbImage.stbi_set_flip_vertically_on_load(1);
+
+            ImageResult image = ImageResult.FromStream(File.OpenRead(Path.Combine(parentDirectory, "Models", "ondskab.png")), ColorComponents.RedGreenBlueAlpha);
+
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, image.Data);
+
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
 
             base.OnLoad();
         }
@@ -119,9 +146,9 @@ namespace CubeEngine.Engine.Window
             GL.ClearColor(new Color4(0.1f, 0.8f, 0.8f, 1f));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-
             GL.UseProgram(shaderProgram.ShaderProgramHandle);
-            
+            GL.BindTexture(TextureTarget.Texture2D, textureID);
+
             GL.BindVertexArray(vertexArray.VertexArrayHandle);
 
             GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);

@@ -1,5 +1,4 @@
-﻿using System;
-using OpenTK.Mathematics;
+﻿using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Window
 {
@@ -46,8 +45,8 @@ namespace CubeEngine.Engine.Window
 
     public readonly struct VertexPositionTexture(Vector3 position, Vector2 texCoord)
     {
-        public readonly Vector3 Position = position;
-        public readonly Vector2 TexCoord = texCoord;
+        public readonly Vector3 Position { get; } = position;
+        public readonly Vector2 TexCoord { get; } = texCoord;
 
         public static readonly VertexInfo vertexInfo = new VertexInfo(
             typeof(VertexPositionTexture),

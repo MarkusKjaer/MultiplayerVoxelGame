@@ -9,10 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="OpenTK" Version="4.8.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\" />
+    <PackageReference Include="StbImageSharp" Version="2.27.14" />
   </ItemGroup>
 
 </Project>
