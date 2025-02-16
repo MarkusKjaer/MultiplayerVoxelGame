@@ -8,16 +8,25 @@ namespace CubeEngine.Engine.Window
 {
     public sealed class CubeGameWindow : GameWindow
     {
-        private Camera _activeCamera;
+        private static CubeGameWindow _instance;
+        public static CubeGameWindow Instance 
+        { 
+            get 
+            { 
+                return _instance; 
+            } 
+            private set
+            {
+                _instance = value;
+            }
+        }
 
-        private int _windowWidth;
-        private int _windowheight;
+        public GameScene CurrentGameScene { get; private set; }
 
-        private float test = 0f;
+        public int WindowWidth { get; private set; }
+        public int Windowheight { get; private set; }
 
-        private Mesh testMesh;
-
-        public CubeGameWindow(Camera camera, int width = 1920, int height = 1080, string title = "Game1") : base(
+        public CubeGameWindow(GameScene currentGameScene, int width = 1920, int height = 1080, string title = "Game1") : base(
             GameWindowSettings.Default,
             new NativeWindowSettings()
             {
@@ -31,9 +40,10 @@ namespace CubeEngine.Engine.Window
                 APIVersion = new Version(3, 3),
             })
         {
-            _activeCamera = camera;
-            _windowWidth = width;
-            _windowheight = height;
+            Instance = this;
+            CurrentGameScene = currentGameScene;
+            WindowWidth = width;
+            Windowheight = height;
 
             CenterWindow();
         }
@@ -46,18 +56,6 @@ namespace CubeEngine.Engine.Window
 
         protected override void OnLoad()
         {
-            OBJFileReader oBJFileReader = new OBJFileReader();
-            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
-            string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
-
-            MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
-
-            Material material = new(Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "Cube.frag"), Path.Combine(parentDirectory, "Models", "ondskab.png"));
-            testMesh = new(meshInfo, material);
-
-            testMesh.Load();
-
             IsVisible = true;
             GL.Enable(EnableCap.DepthTest);
 
@@ -66,18 +64,21 @@ namespace CubeEngine.Engine.Window
 
         protected override void OnUnload()
         {
-            testMesh.Unload();
+
+            var currentGameObjects = CurrentGameScene.GameObjects;
+
+            for (int i = 0; i < currentGameObjects.Count; i++)
+            {
+                CurrentGameScene.RemoveGameObject(currentGameObjects[i]);
+            }
+            
             base.OnUnload();
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
-            test += 0.01f;
-            Matrix4 model;
-            Matrix4.CreateFromAxisAngle(new(1, 1, 0), MathHelper.DegreesToRadians(test), out model);
-
-            testMesh.Model = model;
-            testMesh.Update(_activeCamera, _windowWidth, _windowheight);
+            
+            CurrentGameScene.Update();
 
             base.OnUpdateFrame(args);
         }
@@ -87,8 +88,8 @@ namespace CubeEngine.Engine.Window
             GL.Clear(ClearBufferMask.ColorBufferBit);
             GL.ClearColor(new Color4(0.1f, 0.8f, 0.8f, 1f));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            testMesh.Render();
+            
+            CurrentGameScene.Render();
 
             Context.SwapBuffers();
 

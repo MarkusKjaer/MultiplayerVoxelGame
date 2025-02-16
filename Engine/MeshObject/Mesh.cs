@@ -17,7 +17,7 @@ namespace CubeEngine.Engine.MeshObject
         private MeshInfo _meshInfo;
         private Material _material;
 
-        public Matrix4 Model { get; set; }
+        public Matrix4 Model {  get; set; }
 
         public Mesh(MeshInfo meshInfo, Material material)
         {
@@ -40,9 +40,6 @@ namespace CubeEngine.Engine.MeshObject
 
         public void Load()
         {
-            Model = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(0f));
-            shaderProgram.SetUnitform("model", Model);
-
             //Texture
             textureID = GL.GenTexture();
             GL.ActiveTexture(TextureUnit.Texture0);
