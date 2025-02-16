@@ -1,8 +1,6 @@
 ﻿using CubeEngine.Engine.Window;
 using OpenTK.Mathematics;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks.Dataflow;
 
 namespace CubeEngine.Engine.MeshObject
 {
@@ -25,8 +23,6 @@ namespace CubeEngine.Engine.MeshObject
                 List<Vector3> normals = [];
 
                 List<Vector2> uvs = [];
-
-                int test = 0;
 
                 while ((line = sr.ReadLine()) != null)
                 {
