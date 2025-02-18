@@ -17,7 +17,6 @@ namespace CubeEngine.Engine
 
             using CubeGameWindow gameWindow = new(CurrentGameScene);
             
-            
             Camera camera = new(new(2f, 0f, -2f));
             CurrentGameScene.AddGameObject(camera);
             CurrentGameScene.ActiveCamera = camera;
@@ -39,8 +38,8 @@ namespace CubeEngine.Engine
             visualGameObject2.Rotation = new(40,140,40);
             visualGameObject2.Position = new(1, -2, 0);
 
-            CurrentGameScene.AddGameObject(visualGameObject);
-            CurrentGameScene.AddGameObject(visualGameObject2);
+            visualGameObject.Instantiate();
+            visualGameObject2.Instantiate();
 
             gameWindow.Run();
         }
