@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<textures>
+  <texture name="dirt">
+    <value>0</value>
+    <filename>dirt.png</filename>
+  </texture>
+  <texture name="stone">
+    <value>1</value>
+    <filename>stone.png</filename>
+  </texture>
+  <texture name="grass">
+    <value>2</value>
+    <filename>grass.png</filename>
+  </texture>
+</textures>

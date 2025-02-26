@@ -5,7 +5,7 @@ using OpenTK.Graphics.OpenGL;
 
 namespace CubeEngine.Engine.MeshObject
 {
-    public class Mesh
+    public abstract class BaseMesh<T>
     {
         protected VertexBuffer vertexBuffer;
         protected IndexBuffer indexBuffer;
@@ -14,28 +14,17 @@ namespace CubeEngine.Engine.MeshObject
 
         protected int textureID;
 
-        protected MeshInfo _meshInfo;
+        protected T _meshInfo;
         protected Material _material;
 
-        public Matrix4 Model {  get; set; }
+        public Matrix4 Model { get; set; }
 
-        public Mesh(MeshInfo meshInfo, Material material)
+        public BaseMesh(T meshInfo, Material material)
         {
             this._meshInfo = meshInfo;
             this._material = material;
 
-            vertexBuffer = new VertexBuffer(VertexPositionTexture.vertexInfo, _meshInfo.VertexCount, true);
-            vertexBuffer.SetData(_meshInfo.Vertices, _meshInfo.VertexCount);
-
-            indexBuffer = new(_meshInfo.IndexCount, true);
-            indexBuffer.SetData(_meshInfo.Indices, _meshInfo.IndexCount);
-
-            vertexArray = new VertexArray(vertexBuffer, indexBuffer);
-
-            string vertexShaderCode = File.ReadAllText(_material.VertShaderFileLocation);
-            string pixelShaderCode = File.ReadAllText(_material.FragShaderFileLocation);
-
-            shaderProgram = new(vertexShaderCode, pixelShaderCode);
+            
         }
 
         public void Load()
@@ -71,7 +60,7 @@ namespace CubeEngine.Engine.MeshObject
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
 
-        public void Update(Camera camera, int windowWidth, int windowheight)
+        public virtual void Update(Camera camera, int windowWidth, int windowheight)
         {
             Matrix4 view = camera.GetCurrentView();
             Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90.0f), windowWidth / (float)windowheight, 0.1f, 100.0f);
@@ -81,7 +70,7 @@ namespace CubeEngine.Engine.MeshObject
             shaderProgram.SetUnitform("projection", projection);
         }
 
-        public void Render()
+        public virtual void Render()
         {
             GL.UseProgram(shaderProgram.ShaderProgramHandle);
             GL.BindTexture(TextureTarget.Texture2D, textureID);
@@ -89,23 +78,6 @@ namespace CubeEngine.Engine.MeshObject
             GL.BindVertexArray(vertexArray.VertexArrayHandle);
 
             GL.DrawElements(PrimitiveType.Triangles, _meshInfo.IndexCount, DrawElementsType.UnsignedInt, 0);
-        }
-    }
-
-    public readonly struct MeshInfo
-    {
-        public readonly int VertexCount { get; }
-        public readonly int IndexCount { get; }
-        public readonly VertexPositionTexture[] Vertices { get; }
-        public readonly int[] Indices {  get; }
-
-        public MeshInfo(VertexPositionTexture[] vertexPositions, int[] indices)
-        {
-            Vertices = vertexPositions;
-            VertexCount = Vertices.Length;
-
-            this.Indices = indices;
-            IndexCount = indices.Length;
         }
     }
 }

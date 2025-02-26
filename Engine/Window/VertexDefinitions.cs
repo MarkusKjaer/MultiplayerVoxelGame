@@ -54,5 +54,19 @@ namespace CubeEngine.Engine.Window
             new VertexAttribute("TexCoord", 1, 2, 3 * sizeof(float))
             );
     }
+
+    public readonly struct VertexPositionTextureLayer(Vector3 position, Vector2 texCoord, float layer)
+    {
+        public readonly Vector3 Position { get; } = position;
+        public readonly Vector2 TexCoord { get; } = texCoord;
+        public readonly float Layer { get; } = layer;
+
+        public static readonly VertexInfo vertexInfo = new VertexInfo(
+            typeof(VertexPositionTextureLayer),
+            new VertexAttribute("Position", 0, 3, 0),
+            new VertexAttribute("TexCoord", 1, 2, 3 * sizeof(float)),
+            new VertexAttribute("Layer", 2, 1, (3 + 2) * sizeof(float))
+            );
+    }
 }
 
