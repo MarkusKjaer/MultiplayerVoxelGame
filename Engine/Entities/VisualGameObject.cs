@@ -43,7 +43,6 @@ namespace CubeEngine.Engine.Entities
             Mesh.Model = rotationMatrix * translation;
 
             Mesh.Update(CubeGameWindow.Instance.CurrentGameScene.ActiveCamera, CubeGameWindow.Instance.WindowWidth, CubeGameWindow.Instance.Windowheight);
-
             base.OnUpdate();
         }
 

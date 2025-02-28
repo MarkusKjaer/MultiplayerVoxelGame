@@ -5,12 +5,15 @@ using OpenTK.Graphics.OpenGL;
 
 namespace CubeEngine.Engine.MeshObject
 {
-    public abstract class BaseMesh<T>
+    public abstract class BaseMesh<T> : IDisposable
     {
-        protected VertexBuffer vertexBuffer;
-        protected IndexBuffer indexBuffer;
-        protected VertexArray vertexArray;
-        protected ShaderProgram shaderProgram;
+        private bool disposed;
+
+        // Will be set in child classes
+        protected VertexBuffer vertexBuffer = default!;
+        protected IndexBuffer indexBuffer = default!;
+        protected VertexArray vertexArray = default!;
+        protected ShaderProgram shaderProgram = default!;
 
         protected int textureID;
 
@@ -23,30 +26,11 @@ namespace CubeEngine.Engine.MeshObject
         {
             this._meshInfo = meshInfo;
             this._material = material;
-
-            
         }
 
         public void Load()
         {
-            //Texture
-            textureID = GL.GenTexture();
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, textureID);
-
-            // texture parameters
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
-
-            StbImage.stbi_set_flip_vertically_on_load(1);
-
-            ImageResult image = ImageResult.FromStream(File.OpenRead(_material.TextureLocation), ColorComponents.RedGreenBlueAlpha);
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, image.Data);
-
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+            
         }
 
         public void Unload()
@@ -55,9 +39,9 @@ namespace CubeEngine.Engine.MeshObject
             indexBuffer?.Dispose();
             vertexBuffer?.Dispose();
             shaderProgram?.Dispose();
-            GL.BindTexture(TextureTarget.Texture2D, textureID);
+            GL.BindTexture(TextureTarget.Texture2DArray, textureID);
             GL.DeleteTexture(textureID);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+            GL.BindTexture(TextureTarget.Texture2DArray, 0);
         }
 
         public virtual void Update(Camera camera, int windowWidth, int windowheight)
@@ -73,11 +57,33 @@ namespace CubeEngine.Engine.MeshObject
         public virtual void Render()
         {
             GL.UseProgram(shaderProgram.ShaderProgramHandle);
-            GL.BindTexture(TextureTarget.Texture2D, textureID);
+            GL.BindTexture(TextureTarget.Texture2DArray, _material.TextureManager.TextureID);
 
             GL.BindVertexArray(vertexArray.VertexArrayHandle);
+        }
 
-            GL.DrawElements(PrimitiveType.Triangles, _meshInfo.IndexCount, DrawElementsType.UnsignedInt, 0);
+        ~BaseMesh()
+        {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            if (!disposed)
+            {
+                return;
+            }
+
+            vertexArray?.Dispose();
+            indexBuffer?.Dispose();
+            vertexBuffer?.Dispose();
+            shaderProgram?.Dispose();
+            GL.BindTexture(TextureTarget.Texture2DArray, textureID);
+            GL.DeleteTexture(textureID);
+            GL.BindTexture(TextureTarget.Texture2DArray, 0);
+
+            disposed = true;
+            GC.SuppressFinalize(this);
         }
     }
 }

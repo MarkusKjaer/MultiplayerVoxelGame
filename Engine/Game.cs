@@ -3,14 +3,14 @@ using System.Xml.Linq;
 using CubeEngine.Engine.Entities;
 using CubeEngine.Engine.MeshObject;
 using CubeEngine.Engine.Window;
-using CubeEngine.Engine.Window.Setup;
+using CubeEngine.Engine.Window.Setup.Texture;
 using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine
 {
     public sealed class Game
     {
-        public GameScene CurrentGameScene { get; private set; }
+        public GameSceneWorld CurrentGameScene { get; private set; }
 
         public void Run()
         {
@@ -18,27 +18,30 @@ namespace CubeEngine.Engine
 
             using CubeGameWindow gameWindow = new(CurrentGameScene);
             
-            Camera camera = new(new(2f, 0f, -2f));
+            Camera camera = new(new(20f, 10f, -20f));
             CurrentGameScene.AddGameObject(camera);
             CurrentGameScene.ActiveCamera = camera;
 
             OBJFileReader oBJFileReader = new OBJFileReader();
+
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
             string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
 
             MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
 
-            Material material = new(Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "Cube.frag"), Path.Combine(parentDirectory, "Models", "ondskab.png"));
+            TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
+
+            Material material = new(Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "Cube.frag"), textureManager);
 
             TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
 
-            CurrentGameScene.AddGameObject
+            CurrentGameScene.Map = new(32, 1, textureArrayManagerForMap);
 
 
-            //VisualGameObject visualGameObject = new();
-            //visualGameObject.Mesh = new(meshInfo, material);
-            //visualGameObject.Instantiate();
+            VisualGameObject visualGameObject = new();
+            visualGameObject.Mesh = new(meshInfo, material);
+            visualGameObject.Instantiate();
 
             gameWindow.Run();
         }

@@ -1,4 +1,6 @@
-﻿using CubeEngine.Engine.Window.Setup;
+﻿using CubeEngine.Engine.Entities.World.Mesh;
+using CubeEngine.Engine.MeshObject;
+using CubeEngine.Engine.Window.Setup.Texture;
 using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Entities.World
@@ -14,6 +16,22 @@ namespace CubeEngine.Engine.Entities.World
 
         public Map(int chunkSize, int seed, TextureArrayManager textureArrayManager)
         {
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
+            string shadersPath = Path.Combine(parentDirectory, "Engine", "Window", "Shaders", "MapShaders");
+
+            string vertShaderPath = Path.Combine(shadersPath, "MapChunk.vert");
+            string fragShaderPath = Path.Combine(shadersPath, "MapChunk.frag");
+
+            // Ensure the shader files exist before reading
+            if (!File.Exists(vertShaderPath) || !File.Exists(fragShaderPath))
+            {
+                throw new FileNotFoundException("Shader file(s) not found.",
+                    !File.Exists(vertShaderPath) ? vertShaderPath : fragShaderPath);
+            }
+
+            Material material = new(vertShaderPath, fragShaderPath, textureArrayManager);
+
             _chunkVoxelSize = chunkSize;
 
             List<Vector3> chunksToGen = new List<Vector3>();
@@ -32,14 +50,24 @@ namespace CubeEngine.Engine.Entities.World
 
             for (int i = 0; i < newChunks.Count; i++)
             {
-                CurrentChucnks.Add(new(newChunks[i], textureArrayManager));
+                CurrentChucnks.Add(new(newChunks[i], material));
+            }
+        }
+
+        public void UpdateMeshs(Camera camera, int windowWidth, int windowheight)
+        {
+            for (int i = 0; i < CurrentChucnks.Count; i++)
+            {
+                CurrentChucnks[i].OnUpdate();
             }
         }
 
         public void Render()
         {
-
+            for (int i = 0; i < CurrentChucnks.Count; i++)
+            {
+                CurrentChucnks[i].Render();
+            }
         }
-
     }
 }

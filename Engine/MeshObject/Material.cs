@@ -1,12 +1,12 @@
-﻿using CubeEngine.Engine.Window;
+﻿using CubeEngine.Engine.Window.Setup.Texture;
 
 namespace CubeEngine.Engine.MeshObject
 {
-    public class Material(string vertShaderFileLocation, string fragShaderFileLocation, string textureLocation)
+    public class Material(string vertShaderFileLocation, string fragShaderFileLocation, ITexture texture)
     {
         public string VertShaderFileLocation { get; private set; } = vertShaderFileLocation;
         public string FragShaderFileLocation { get; private set; } = fragShaderFileLocation;
 
-        public string TextureLocation { get; private set; } = textureLocation;
+        public ITexture TextureManager { get; private set; } = texture;
     }
 }

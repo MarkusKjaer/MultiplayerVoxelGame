@@ -38,7 +38,7 @@ namespace CubeEngine.Engine
             }
         }
 
-        public void Update()
+        public virtual void Update()
         {
             for (int i = 0; i < _gameObjects.Count; i++)
             {
@@ -46,7 +46,7 @@ namespace CubeEngine.Engine
             }
         }
 
-        public void Render()
+        public virtual void Render()
         {
             for (int i = 0; i < _gameObjects.Count; i++)
             {

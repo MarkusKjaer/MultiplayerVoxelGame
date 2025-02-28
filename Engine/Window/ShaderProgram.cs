@@ -45,8 +45,6 @@ namespace CubeEngine.Engine.Window
 
             uniforms = CreateUniformList(ShaderProgramHandle);
             attributes = CreateAttributeList(ShaderProgramHandle);
-
-
         }
 
         ~ShaderProgram()
