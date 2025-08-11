@@ -33,8 +33,8 @@ namespace CubeEngine.Engine.Entities.World
 
         private ChunkMeshInfo GenChunkMesh(ChunkData chunkData)
         {
-            List<VertexPositionTextureLayer> vertexPositions = new();
-            List<int> indices = new();
+            List<VertexPositionNormalTextureLayer> vertexPositions = [];
+            List<int> indices = [];
 
             int vertexOffset = 0;
 
@@ -60,6 +60,14 @@ namespace CubeEngine.Engine.Entities.World
                         Vector3 v011 = voxelPosition + new Vector3(0, 1, 1);
                         Vector3 v111 = voxelPosition + new Vector3(1, 1, 1);
 
+                        // Define normals for each face
+                        Vector3 normalZPlus = new(0, 0, 1);
+                        Vector3 normalZMinus = new(0, 0, -1);
+                        Vector3 normalXPlus = new(1, 0, 0);
+                        Vector3 normalXMinus = new(-1, 0, 0);
+                        Vector3 normalYPlus = new(0, 1, 0);
+                        Vector3 normalYMinus = new(0, -1, 0);
+
                         // Texture coordinates
                         Vector2 uv00 = new(0, 0);
                         Vector2 uv10 = new(1, 0);
@@ -67,84 +75,80 @@ namespace CubeEngine.Engine.Entities.World
                         Vector2 uv11 = new(1, 1);
 
                         // Front face (Z+)
-                        if(GetVoxel(i, j, k - 1).VoxelType != Enum.VoxelType.Empty)
+                        if (GetVoxel(i, j, k + 1).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionTextureLayer(v001, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v101, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v011, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v111, uv11, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v001, normalZPlus, uv00, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v101, normalZPlus, uv10, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v011, normalZPlus, uv01, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v111, normalZPlus, uv11, textureLayer));
 
-                            indices.AddRange([vertexOffset + 0, vertexOffset + 1, vertexOffset + 2]);
+                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
                             indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-
                             vertexOffset += 4;
                         }
-
-
 
                         // Back face (Z-)
-                        if (GetVoxel(i, j, k + 1).VoxelType != Enum.VoxelType.Empty)
+                        if (GetVoxel(i, j, k - 1).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionTextureLayer(v000, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v010, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v100, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v110, uv11, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v000, normalZMinus, uv00, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v010, normalZMinus, uv01, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v100, normalZMinus, uv10, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v110, normalZMinus, uv11, textureLayer));
 
-                            indices.AddRange([vertexOffset + 0, vertexOffset + 1, vertexOffset + 2]);
+                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
                             indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-
                             vertexOffset += 4;
                         }
-                        // Left face (X+)
-                        if (GetVoxel(i - 1, j, k).VoxelType != Enum.VoxelType.Empty)
+
+                        // Left face (X-)
+                        if (GetVoxel(i - 1, j, k).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionTextureLayer(v000, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v010, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v001, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v011, uv11, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v000, normalXMinus, uv00, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v010, normalXMinus, uv10, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v001, normalXMinus, uv01, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v011, normalXMinus, uv11, textureLayer));
 
-                            indices.AddRange([vertexOffset + 0, vertexOffset + 1, vertexOffset + 2]);
+                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
                             indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-
                             vertexOffset += 4;
                         }
-                        // Right face (X-)
-                        if (GetVoxel(i + 1, j, k).VoxelType != Enum.VoxelType.Empty)
+
+                        // Right face (X+)
+                        if (GetVoxel(i + 1, j, k).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionTextureLayer(v100, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v110, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v101, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v111, uv11, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v100, normalXPlus, uv00, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v110, normalXPlus, uv01, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v101, normalXPlus, uv10, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v111, normalXPlus, uv11, textureLayer));
 
-                            indices.AddRange([vertexOffset + 0, vertexOffset + 1, vertexOffset + 2]);
+                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
                             indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-
                             vertexOffset += 4;
                         }
+
                         // Top face (Y+)
-                        if (GetVoxel(i, j - 1, k).VoxelType != Enum.VoxelType.Empty)
+                        if (GetVoxel(i, j + 1, k).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionTextureLayer(v010, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v011, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v110, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v111, uv11, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v010, normalYPlus, uv00, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v011, normalYPlus, uv10, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v110, normalYPlus, uv01, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v111, normalYPlus, uv11, textureLayer));
 
-                            indices.AddRange([vertexOffset + 0, vertexOffset + 1, vertexOffset + 2]);
+                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
                             indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-
                             vertexOffset += 4;
                         }
+
                         // Bottom face (Y-)
-                        if (GetVoxel(i, j + 1, k).VoxelType != Enum.VoxelType.Empty)
+                        if (GetVoxel(i, j - 1, k).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionTextureLayer(v000, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v001, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v100, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionTextureLayer(v101, uv11, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v000, normalYMinus, uv00, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v001, normalYMinus, uv10, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v100, normalYMinus, uv01, textureLayer));
+                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v101, normalYMinus, uv11, textureLayer));
 
-                            indices.AddRange([vertexOffset + 0, vertexOffset + 1, vertexOffset + 2]);
+                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
                             indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-
                             vertexOffset += 4;
                         }
                     }

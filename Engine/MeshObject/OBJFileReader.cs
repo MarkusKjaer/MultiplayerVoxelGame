@@ -76,7 +76,7 @@ namespace CubeEngine.Engine.MeshObject
                     }
                 }
 
-                List<VertexPositionTexture> verticePositionTextures = [];
+                List<VertexPositionNormalTexture> verticePositionTextures = [];
                 Dictionary<(int, int), int> uniqueVertices = new(); // Key: (vertexIndex, uvIndex), Value: new index
 
                 List<int> finalIndices = [];
@@ -89,7 +89,7 @@ namespace CubeEngine.Engine.MeshObject
                     {
                         newIndex = verticePositionTextures.Count;
                         uniqueVertices[key] = newIndex;
-                        verticePositionTextures.Add(new(vertices[vertexIndices[i]], uvs[uvIndices[i]]));
+                        verticePositionTextures.Add(new(vertices[vertexIndices[i]], normals[normalIndices[i]], uvs[uvIndices[i]]));
                     }
 
                     finalIndices.Add(newIndex);

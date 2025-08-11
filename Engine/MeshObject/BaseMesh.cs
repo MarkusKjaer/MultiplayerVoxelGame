@@ -53,6 +53,10 @@ namespace CubeEngine.Engine.MeshObject
             shaderProgram.SetUnitform("model", Model);
             shaderProgram.SetUnitform("view", view);
             shaderProgram.SetUnitform("projection", projection);
+            shaderProgram.SetUnitform("lightPos", 2000, 2000, 2000); // Example light position
+            shaderProgram.SetUnitform("lightColor", 1.0f, 1.0f, 1.0f); // Example light color
+            shaderProgram.SetUnitform("ambient", 0.1f, 0.1f, 0.1f); // Example ambient light color
+            shaderProgram.SetUnitform("objectColor", 1.0f, 1.0f, 1.0f); // Example diffuse light color
         }
 
         public virtual void Render()

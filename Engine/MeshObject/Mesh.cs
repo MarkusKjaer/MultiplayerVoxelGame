@@ -8,7 +8,7 @@ namespace CubeEngine.Engine.MeshObject
     {
         public Mesh(MeshInfo meshInfo, Material material) : base(meshInfo, material)
         {
-            vertexBuffer = new VertexBuffer(VertexPositionTexture.vertexInfo, _meshInfo.VertexCount, true);
+            vertexBuffer = new VertexBuffer(VertexPositionNormalTexture.vertexInfo, _meshInfo.VertexCount, true);
             vertexBuffer.SetData(_meshInfo.Vertices, _meshInfo.VertexCount);
 
             indexBuffer = new(_meshInfo.IndexCount, true);
@@ -34,10 +34,10 @@ namespace CubeEngine.Engine.MeshObject
     {
         public readonly int VertexCount { get; }
         public readonly int IndexCount { get; }
-        public readonly VertexPositionTexture[] Vertices { get; }
+        public readonly VertexPositionNormalTexture[] Vertices { get; }
         public readonly int[] Indices {  get; }
 
-        public MeshInfo(VertexPositionTexture[] vertexPositions, int[] indices)
+        public MeshInfo(VertexPositionNormalTexture[] vertexPositions, int[] indices)
         {
             Vertices = vertexPositions;
             VertexCount = Vertices.Length;
