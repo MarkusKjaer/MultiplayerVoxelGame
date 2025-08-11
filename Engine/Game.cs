@@ -17,8 +17,9 @@ namespace CubeEngine.Engine
             CurrentGameScene = new("testGameScene");
 
             using CubeGameWindow gameWindow = new(CurrentGameScene);
-            
-            Camera camera = new(new(20f, 10f, -20f));
+
+            PlayerFlyCamera camera = new(new(00f, 00f, 00));
+
             CurrentGameScene.AddGameObject(camera);
             CurrentGameScene.ActiveCamera = camera;
 
@@ -43,6 +44,8 @@ namespace CubeEngine.Engine
             visualGameObject.Mesh = new(meshInfo, material);
             visualGameObject.Instantiate();
 
+
+            gameWindow.VSync = OpenTK.Windowing.Common.VSyncMode.On;
             gameWindow.Run();
         }
 

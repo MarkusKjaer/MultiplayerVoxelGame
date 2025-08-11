@@ -1,5 +1,6 @@
 ﻿using CubeEngine.Engine.Window;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.Common;
 
 namespace CubeEngine.Engine.MeshObject
 {

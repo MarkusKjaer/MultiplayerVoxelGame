@@ -6,7 +6,7 @@ namespace CubeEngine.Engine.Window
     public sealed class IndexBuffer : IDisposable
     {
         public static readonly int MinVertexCount = 1;
-        public static readonly int MaxVertexCount = 250_000;
+        public static readonly int MaxVertexCount = 250_0000;
 
         public bool disposed;
 
@@ -25,7 +25,6 @@ namespace CubeEngine.Engine.Window
             }
 
             IndexCount = indexCount;
-            IsStatic = isStatic;
 
             BufferUsageHint hint = BufferUsageHint.StaticDraw;
             if (!IsStatic)
@@ -36,7 +35,6 @@ namespace CubeEngine.Engine.Window
             IndexBufferHandle = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferHandle);
             GL.BufferData(BufferTarget.ElementArrayBuffer, IndexCount * sizeof(int), nint.Zero, hint);
-
         }
 
         ~IndexBuffer()

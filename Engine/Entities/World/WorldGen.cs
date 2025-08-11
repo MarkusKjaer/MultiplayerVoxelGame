@@ -43,12 +43,15 @@ namespace CubeEngine.Engine.Entities.World
             {
                 for (int j = 0; j < chunkSize; j++)
                 {
-                    Voxel voxel = new Voxel
+                    for (int k = 0; k < chunkSize; k++)
                     {
-                        Position = new(i, 0, j),
-                        VoxelType = VoxelType.Grass,
-                    };
-                    chunk.Voxels[i, 0, j] = voxel;
+                        Voxel voxel = new Voxel
+                        {
+                            Position = new(i, j, k),
+                            VoxelType = VoxelType.Grass,
+                        };
+                        chunk.Voxels[i, j, k] = voxel;
+                    }
                 }
             }
 

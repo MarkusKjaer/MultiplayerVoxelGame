@@ -1,4 +1,5 @@
 ﻿using CubeEngine.Engine.MeshObject;
+using CubeEngine.Util;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -26,6 +27,15 @@ namespace CubeEngine.Engine.Window
         public int WindowWidth { get; private set; }
         public int Windowheight { get; private set; }
 
+        #region Time
+
+        private Time _time;
+
+        public event Action<double>? OnNewDeltaTime;
+
+
+        #endregion
+
         public CubeGameWindow(GameScene currentGameScene, int width = 1920, int height = 1080, string title = "Game1") : base(
             GameWindowSettings.Default,
             new NativeWindowSettings()
@@ -44,6 +54,8 @@ namespace CubeEngine.Engine.Window
             CurrentGameScene = currentGameScene;
             WindowWidth = width;
             Windowheight = height;
+
+            _time = new(this);
 
             CenterWindow();
         }
@@ -71,13 +83,14 @@ namespace CubeEngine.Engine.Window
             {
                 CurrentGameScene.RemoveGameObject(currentGameObjects[i]);
             }
-            
+                
             base.OnUnload();
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
-            
+            OnNewDeltaTime?.Invoke(args.Time);
+
             CurrentGameScene.Update();
 
             base.OnUpdateFrame(args);

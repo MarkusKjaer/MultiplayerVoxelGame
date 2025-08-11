@@ -1,6 +1,7 @@
 ﻿using CubeEngine.Engine.MeshObject;
 using CubeEngine.Engine.Window;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 
 namespace CubeEngine.Engine.Entities
 {
@@ -25,9 +26,9 @@ namespace CubeEngine.Engine.Entities
         public override void OnUpdate()
         {
             // Convert degrees to radians
-            float rotX = MathHelper.DegreesToRadians(Rotation.X);
-            float rotY = MathHelper.DegreesToRadians(Rotation.Y);
-            float rotZ = MathHelper.DegreesToRadians(Rotation.Z);
+            float rotX = MathHelper.DegreesToRadians(Orientation.X);
+            float rotY = MathHelper.DegreesToRadians(Orientation.Y);
+            float rotZ = MathHelper.DegreesToRadians(Orientation.Z);
 
             // Create rotation matrices for each axis
             Matrix4 rotationX = Matrix4.CreateRotationX(rotX);

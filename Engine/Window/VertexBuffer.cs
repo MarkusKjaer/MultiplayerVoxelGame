@@ -6,7 +6,7 @@ namespace CubeEngine.Engine.Window
     public sealed class VertexBuffer : IDisposable
     {
         public static readonly int MinVertexCount = 1;
-        public static readonly int MaxVertexCount = 100_000;
+        public static readonly int MaxVertexCount = 100_0000;
 
         private bool disposed;
 
