@@ -54,8 +54,8 @@ namespace CubeEngine.Engine.Window
             typeof(VertexPositionNormalTexture),
             new VertexAttribute("Position", 0, 3, 0),
             new VertexAttribute("Normal", 1, 3, 3 * sizeof(float)),
-            new VertexAttribute("TexCoord", 1, 2, 3 * sizeof(float))
-            );
+            new VertexAttribute("TexCoord", 2, 2, 6 * sizeof(float))
+        );
     }
     /*
     public readonly struct VertexPositionTextureLayer(Vector3 position, Vector2 texCoord, float layer)

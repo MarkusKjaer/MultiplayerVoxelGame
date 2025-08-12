@@ -62,9 +62,6 @@ namespace CubeEngine.Engine.MeshObject
         public virtual void Render()
         {
             GL.UseProgram(shaderProgram.ShaderProgramHandle);
-            GL.BindTexture(TextureTarget.Texture2DArray, _material.TextureManager.TextureID);
-
-            GL.BindVertexArray(vertexArray.VertexArrayHandle);
         }
 
         ~BaseMesh()

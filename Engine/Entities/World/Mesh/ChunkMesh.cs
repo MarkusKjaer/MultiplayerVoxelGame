@@ -44,6 +44,10 @@ namespace CubeEngine.Engine.Entities.World.Mesh
         {
             base.Render();
 
+            GL.BindTexture(TextureTarget.Texture2DArray, _material.TextureManager.TextureID);
+
+            GL.BindVertexArray(vertexArray.VertexArrayHandle);
+
             GL.DrawElements(PrimitiveType.Triangles, _meshInfo.IndexCount, DrawElementsType.UnsignedInt, 0);
         }
     }

@@ -42,9 +42,9 @@ namespace CubeEngine.Engine
             CurrentGameScene.Map = new(32, 1, textureArrayManagerForMap);
 
 
-            VisualGameObject visualGameObject = new();
-            visualGameObject.Mesh = new(meshInfo, material);
-            visualGameObject.Instantiate();
+            VisualGameObject abe = new();
+            abe.Mesh = new(meshInfo, material);
+            abe.Instantiate();
 
 
             gameWindow.VSync = OpenTK.Windowing.Common.VSyncMode.On;

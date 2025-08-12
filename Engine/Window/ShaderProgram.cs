@@ -121,7 +121,7 @@ namespace CubeEngine.Engine.Window
         {
             if (!GetShaderUnitform(name, out ShaderUniform uniform))
             {
-                throw new ArgumentException("Name was not found");
+                throw new ArgumentException("Name was not found: ", name);
             }
 
             if (uniform.Type != ActiveUniformType.FloatVec3)

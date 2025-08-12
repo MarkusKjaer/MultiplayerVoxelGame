@@ -26,6 +26,10 @@ namespace CubeEngine.Engine.MeshObject
         {
             base.Render();
 
+            GL.BindTexture(TextureTarget.Texture2D, _material.TextureManager.TextureID);
+
+            GL.BindVertexArray(vertexArray.VertexArrayHandle);
+
             GL.DrawElements(PrimitiveType.Triangles, _meshInfo.IndexCount, DrawElementsType.UnsignedInt, 0);
         }
     }
