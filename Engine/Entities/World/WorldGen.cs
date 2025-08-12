@@ -1,4 +1,5 @@
 ﻿using CubeEngine.Engine.Entities.World.Enum;
+using CubeEngine.Util;
 using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Entities.World
@@ -9,7 +10,7 @@ namespace CubeEngine.Engine.Entities.World
         public WorldGen(int seed) 
         {
             _seed = seed;
-            Random rand = new Random(_seed);
+            Random rand = new(_seed);
 
             
         }
@@ -17,14 +18,14 @@ namespace CubeEngine.Engine.Entities.World
         public WorldGen()
         {
             _seed = Guid.NewGuid().GetHashCode();
-            Random rand = new Random(_seed);
+            Random rand = new(_seed);
 
 
         }
 
         public List<ChunkData> GenPartOfWorld(int chunkSize, List<Vector3> chunksToGenPosition)
         {
-            List<ChunkData> chunks = new List<ChunkData>();
+            List<ChunkData> chunks = [];
 
             for (int i = 0; i < chunksToGenPosition.Count; i++)
             {
@@ -39,18 +40,34 @@ namespace CubeEngine.Engine.Entities.World
             ChunkData chunk = new();
             chunk.Voxels = new Voxel[chunkSize, chunkSize, chunkSize];
 
-            for (int i = 0; i < chunkSize; i++)
+            for (int x = 0; x < chunkSize; x++)
             {
-                for (int j = 0; j < chunkSize; j++)
+                for (int z = 0; z < chunkSize; z++)
                 {
-                    for (int k = 0; k < chunkSize; k++)
+                    // Convert chunk-local position to world position
+                    float worldX = chunkPosition.X * chunkSize + x;
+                    float worldZ = chunkPosition.Z * chunkSize + z;
+
+                    // Get height from noise
+                    float height = Noise.ImageHeight(worldX, worldZ) * (chunkSize - 1);
+                    int groundHeight = (int)Math.Clamp(height, 0, chunkSize - 1);
+
+                    for (int y = 0; y < chunkSize; y++)
                     {
-                        Voxel voxel = new Voxel
+                        VoxelType voxelType;
+
+                        if (y == groundHeight)
+                            voxelType = VoxelType.Grass;
+                        else if (y < groundHeight)
+                            voxelType = VoxelType.Stone;
+                        else
+                            voxelType = VoxelType.Empty;
+
+                        chunk.Voxels[x, y, z] = new Voxel
                         {
-                            Position = new(i, j, k),
-                            VoxelType = VoxelType.Grass,
+                            Position = new Vector3(x, y, z),
+                            VoxelType = voxelType
                         };
-                        chunk.Voxels[i, j, k] = voxel;
                     }
                 }
             }

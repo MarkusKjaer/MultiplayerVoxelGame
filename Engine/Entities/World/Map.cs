@@ -34,8 +34,7 @@ namespace CubeEngine.Engine.Entities.World
 
             _chunkVoxelSize = chunkSize;
 
-            List<Vector3> chunksToGen = new List<Vector3>();
-            chunksToGen.Add(new(0, 0, 0));
+            List<Vector3> chunksToGen = [new(0, 0, 0)];
 
             if (seed == 0) 
             {

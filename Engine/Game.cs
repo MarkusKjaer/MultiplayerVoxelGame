@@ -1,10 +1,9 @@
-﻿using System;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 using CubeEngine.Engine.Entities;
 using CubeEngine.Engine.MeshObject;
 using CubeEngine.Engine.Window;
 using CubeEngine.Engine.Window.Setup.Texture;
-using OpenTK.Mathematics;
+using CubeEngine.Util;
 
 namespace CubeEngine.Engine
 {
@@ -28,6 +27,9 @@ namespace CubeEngine.Engine
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
             string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
+
+            Noise.LoadHeightmap(Path.Combine(parentDirectory, "Util", "NoiseImage", "perlin.png"));
+
 
             MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
 
