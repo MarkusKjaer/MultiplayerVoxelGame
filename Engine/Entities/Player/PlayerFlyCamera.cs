@@ -1,8 +1,9 @@
-﻿using CubeEngine.Engine;
-using CubeEngine.Engine.Window;
+﻿using CubeEngine.Engine.Client;
+using CubeEngine.Engine.Client.Graphics.Window;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using System.Diagnostics;
 
 public class PlayerFlyCamera : Camera
 {
@@ -16,6 +17,7 @@ public class PlayerFlyCamera : Camera
 
     public override void OnUpdate()
     {
+
         if (!CubeGameWindow.Instance.IsFocused)
             return;
 
@@ -41,6 +43,11 @@ public class PlayerFlyCamera : Camera
         {
             moveDir = Vector3.Normalize(moveDir);
             Move(moveDir, _moveSpeed);
+        }
+
+        if(input.IsKeyDown(Keys.G))
+        {
+            _ = GameClient.Instance?.SendTcpMessage("GGG");
         }
     }
 

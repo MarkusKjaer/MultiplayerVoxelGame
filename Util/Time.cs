@@ -1,4 +1,4 @@
-﻿using CubeEngine.Engine.Window;
+﻿using CubeEngine.Engine.Client.Graphics.Window;
 
 namespace CubeEngine.Util
 {

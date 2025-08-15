@@ -1,4 +1,4 @@
-﻿using CubeEngine.Engine.Window;
+﻿using CubeEngine.Engine.Client.Graphics.Window;
 using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Entities

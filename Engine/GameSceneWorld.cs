@@ -1,26 +1,23 @@
-﻿
-using CubeEngine.Engine.Entities.World;
-using CubeEngine.Engine.Window;
+﻿using CubeEngine.Engine.Client.Graphics.Window;
+using CubeEngine.Engine.Client.World;
 
 namespace CubeEngine.Engine
 {
-    public class GameSceneWorld : GameScene
+    public class GameSceneWorld(string name) : GameScene(name)
     {
-        public GameSceneWorld(string name) : base(name) { }
-
         public Map Map { get; set; }
 
         public override void Update()
         {
             base.Update();
-            Map.UpdateMeshs(CubeGameWindow.Instance.CurrentGameScene.ActiveCamera, CubeGameWindow.Instance.WindowWidth, CubeGameWindow.Instance.Windowheight);
+            Map?.UpdateMeshs(CubeGameWindow.Instance.CurrentGameScene.ActiveCamera, CubeGameWindow.Instance.WindowWidth, CubeGameWindow.Instance.Windowheight);
         }
 
         public override void Render()
         {
             
             base.Render();
-            Map.Render();
+            Map?.Render();
         }
     }
 }

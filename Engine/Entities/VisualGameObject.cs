@@ -1,7 +1,6 @@
-﻿using CubeEngine.Engine.MeshObject;
-using CubeEngine.Engine.Window;
+﻿using CubeEngine.Engine.Client.Graphics.MeshObject;
+using CubeEngine.Engine.Client.Graphics.Window;
 using OpenTK.Mathematics;
-using OpenTK.Windowing.Common;
 
 namespace CubeEngine.Engine.Entities
 {
