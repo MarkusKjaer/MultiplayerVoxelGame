@@ -1,6 +1,7 @@
 ﻿using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window;
 using OpenTK.Mathematics;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace CubeEngine.Engine.Entities
 {
@@ -24,23 +25,7 @@ namespace CubeEngine.Engine.Entities
 
         public override void OnUpdate()
         {
-            // Convert degrees to radians
-            float rotX = MathHelper.DegreesToRadians(Orientation.X);
-            float rotY = MathHelper.DegreesToRadians(Orientation.Y);
-            float rotZ = MathHelper.DegreesToRadians(Orientation.Z);
-
-            // Create rotation matrices for each axis
-            Matrix4 rotationX = Matrix4.CreateRotationX(rotX);
-            Matrix4 rotationY = Matrix4.CreateRotationY(rotY);
-            Matrix4 rotationZ = Matrix4.CreateRotationZ(rotZ);
-
-            // Combine rotations: Usually Y * X * Z order is common for Euler angles
-            Matrix4 rotationMatrix = rotationY * rotationX * rotationZ;
-
-            // Create translation matrix
-            Matrix4 translation = Matrix4.CreateTranslation(Position);
-
-            Mesh.Model = rotationMatrix * translation;
+            Mesh.Model = Matrix4.CreateFromQuaternion(GlobalOrientation) * Matrix4.CreateScale(GlobalScale) * Matrix4.CreateTranslation(GlobalPosition);
 
             Mesh.Update(CubeGameWindow.Instance.CurrentGameScene.ActiveCamera, CubeGameWindow.Instance.WindowWidth, CubeGameWindow.Instance.Windowheight);
             base.OnUpdate();

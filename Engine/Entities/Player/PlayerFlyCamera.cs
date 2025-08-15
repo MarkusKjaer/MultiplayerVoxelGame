@@ -17,14 +17,24 @@ public class PlayerFlyCamera : Camera
 
     public override void OnUpdate()
     {
-
         if (!CubeGameWindow.Instance.IsFocused)
             return;
 
         var mouseDelta = CubeGameWindow.Instance.MouseState.Delta;
 
-        float xoffset = mouseDelta.X * _mouseSensitivity;
+        float xoffset = -mouseDelta.X * _mouseSensitivity;
         float yoffset = -mouseDelta.Y * _mouseSensitivity;
+
+        float currentPitch = MathHelper.RadiansToDegrees(
+            MathF.Asin(GlobalFront.Y) // extract pitch from forward vector
+        );
+
+        float newPitch = currentPitch + yoffset;
+        if(newPitch > 89.0f || newPitch < -89.0f)
+        {
+            // Clamp pitch to prevent flipping
+            yoffset = 0;
+        }
 
         Rotate(xoffset, yoffset);
 
@@ -32,12 +42,12 @@ public class PlayerFlyCamera : Camera
         KeyboardState input = CubeGameWindow.Instance.KeyboardState;
         Vector3 moveDir = Vector3.Zero;
 
-        if (input.IsKeyDown(Keys.W)) moveDir += front;
-        if (input.IsKeyDown(Keys.S)) moveDir -= front;
-        if (input.IsKeyDown(Keys.A)) moveDir -= right;
-        if (input.IsKeyDown(Keys.D)) moveDir += right;
-        if (input.IsKeyDown(Keys.Space)) moveDir += up;
-        if (input.IsKeyDown(Keys.LeftShift)) moveDir -= up;
+        if (input.IsKeyDown(Keys.W)) moveDir += Front;
+        if (input.IsKeyDown(Keys.S)) moveDir -= Front;
+        if (input.IsKeyDown(Keys.A)) moveDir -= Right;
+        if (input.IsKeyDown(Keys.D)) moveDir += Right;
+        if (input.IsKeyDown(Keys.Space)) moveDir += Up;
+        if (input.IsKeyDown(Keys.LeftShift)) moveDir -= Up;
 
         if (moveDir != Vector3.Zero)
         {

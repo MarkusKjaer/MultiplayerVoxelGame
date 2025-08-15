@@ -7,7 +7,7 @@ using CubeEngine.Engine.Entities;
 using CubeEngine.Engine.Enum;
 using CubeEngine.Engine.Server;
 using CubeEngine.Util;
-using OpenTK.Windowing.Desktop;
+using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine
 {
@@ -47,9 +47,13 @@ namespace CubeEngine.Engine
 
 
 
+            PlayerFlyControllerClient player = new();
+            Camera camera = new(new Vector3(0, 0, 10))
+            {
+                Parent = player
+            };
 
-            PlayerFlyCamera camera = new(new(00f, 00f, 00));
-
+            CurrentGameScene.AddGameObject(player);
             CurrentGameScene.AddGameObject(camera);
             CurrentGameScene.ActiveCamera = camera;
 
@@ -75,10 +79,14 @@ namespace CubeEngine.Engine
 
             VisualGameObject abe = new()
             {
-                Mesh = new(meshInfo, material)
+                Mesh = new(meshInfo, material),
+                Parent = player,
             };
-            abe.Instantiate();
 
+            // Later, invert the orientation
+            abe.Orientation = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(180f));
+
+            abe.Instantiate();
 
             if (networkRole != NetworkRole.Server && gameWindow != null)
             {
