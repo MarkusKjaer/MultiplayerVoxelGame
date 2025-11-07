@@ -53,8 +53,8 @@ namespace CubeEngine.Engine
                 Parent = player
             };
 
-            CurrentGameScene.AddGameObject(player);
-            CurrentGameScene.AddGameObject(camera);
+            player.Instantiate();
+            camera.Instantiate();
             CurrentGameScene.ActiveCamera = camera;
 
             OBJFileReader oBJFileReader = new OBJFileReader();
@@ -68,23 +68,18 @@ namespace CubeEngine.Engine
 
             MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
 
-            TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
-
-            Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
-
             TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
-
             CurrentGameScene.Map = new(32, 1, textureArrayManagerForMap);
 
+            TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
+            Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
 
             VisualGameObject abe = new()
             {
                 Mesh = new(meshInfo, material),
                 Parent = player,
+                Orientation = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(180f))
             };
-
-            // Later, invert the orientation
-            abe.Orientation = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(180f));
 
             abe.Instantiate();
 
@@ -96,15 +91,12 @@ namespace CubeEngine.Engine
 
         private TextureArrayManager LoadWorldTextures(string parentDirectory)
         {
-            // Construct the path to the world textures XML file
             string pathToWorldTextures = Path.Combine(parentDirectory, "Models", "WorldTexture", "textures.xml");
 
-            // Load the XML file
             XDocument xmlDoc = XDocument.Load(pathToWorldTextures);
 
             List<string> textureNames = new List<string>();
 
-            // Parse the XML and extract texture filenames
             foreach (var texture in xmlDoc.Descendants("texture"))
             {
                 string filename = texture.Element("filename")?.Value ?? "";
@@ -114,7 +106,6 @@ namespace CubeEngine.Engine
                 }
             }
 
-            // Create and return the TextureArrayManager
             return new TextureArrayManager(textureNames.ToArray(), 1, 1);
         }
     }

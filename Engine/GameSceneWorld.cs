@@ -15,7 +15,6 @@ namespace CubeEngine.Engine
 
         public override void Render()
         {
-            
             base.Render();
             Map?.Render();
         }

@@ -1,6 +1,10 @@
 ﻿using CubeEngine.Engine.Client.Graphics.Window;
 using OpenTK.Mathematics;
-using System.Text.RegularExpressions;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 
 namespace CubeEngine.Engine.Client.Graphics.MeshObject
 {
@@ -8,175 +12,198 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
     {
         public MeshInfo ReadOBJFile(string filePath)
         {
-            MeshInfo meshInfoToReturn = new();
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var uvs = new List<Vector2>();
+
+            var faceVertexIndices = new List<int>();
+            var faceUvIndices = new List<int>();
+            var faceNormalIndices = new List<int>();
 
             try
             {
-                using StreamReader sr = new StreamReader(filePath);
+                using var sr = new StreamReader(filePath);
                 string? line;
-
-                List<int> vertexIndices = [], normalIndices = [];
-                List<int> uvIndices = [];
-
-                List <Vector3> vertices = [];
-                List<int> indices = [];
-                List<Vector3> normals = [];
-
-                List<Vector2> uvs = [];
 
                 while ((line = sr.ReadLine()) != null)
                 {
-                    var firstWord = Regex.Match(line, @"^([\w\-]+)").Value;
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
 
-                    if (string.Equals(firstWord, "v"))
+                    line = line.Trim();
+
+                    if (line.StartsWith("#"))
+                        continue;
+
+                    var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (tokens.Length == 0)
+                        continue;
+
+                    string cmd = tokens[0];
+
+                    if (cmd == "v")
                     {
-                        Vector3 vertex;
+                        if (tokens.Length < 4) continue;
 
-                        string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                        vertex.X = float.Parse(parts[1]);
-                        vertex.Y = float.Parse(parts[2]);
-                        vertex.Z = float.Parse(parts[3]);
+                        float x = float.Parse(tokens[1], CultureInfo.InvariantCulture);
+                        float y = float.Parse(tokens[2], CultureInfo.InvariantCulture);
+                        float z = float.Parse(tokens[3], CultureInfo.InvariantCulture);
 
-                        vertices.Add(vertex);
+                        vertices.Add(new Vector3(x, y, z));
                     }
-                    else if (string.Equals(firstWord, "vt"))
+                    else if (cmd == "vt")
                     {
-                        Vector2 uv;
+                        if (tokens.Length < 3) continue;
 
-                        string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                        uv.X = float.Parse(parts[1]);
-                        uv.Y = float.Parse(parts[2]);
+                        float u = float.Parse(tokens[1], CultureInfo.InvariantCulture);
+                        float v = float.Parse(tokens[2], CultureInfo.InvariantCulture);
 
-                        uvs.Add(uv);
+                        uvs.Add(new Vector2(u, v));
                     }
-                    else if (string.Equals(firstWord, "vn"))
+                    else if (cmd == "vn")
                     {
-                        Vector3 normal;
+                        if (tokens.Length < 4) continue;
 
-                        string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                        normal.X = float.Parse(parts[1]);
-                        normal.Y = float.Parse(parts[2]);
-                        normal.Z = float.Parse(parts[3]);
+                        float x = float.Parse(tokens[1], CultureInfo.InvariantCulture);
+                        float y = float.Parse(tokens[2], CultureInfo.InvariantCulture);
+                        float z = float.Parse(tokens[3], CultureInfo.InvariantCulture);
 
-                        normals.Add(normal);
+                        normals.Add(new Vector3(x, y, z));
                     }
-                    else if (string.Equals(firstWord, "f"))
+                    else if (cmd == "f")
                     {
-                        string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (tokens.Length < 4) continue;
 
-                        if (parts.Length == 4)
+                        var refs = new List<(int v, int vt, int vn)>();
+
+                        for (int i = 1; i < tokens.Length; i++)
                         {
-                            ThreeFace(parts, vertexIndices, uvIndices, normalIndices);
+                            var comps = tokens[i].Split('/');
+
+                            int vIndex = ParseIndexSafe(comps, 0);
+                            int vtIndex = ParseIndexSafe(comps, 1);
+                            int vnIndex = ParseIndexSafe(comps, 2);
+
+                            vIndex = NormalizeIndex(vIndex, vertices.Count);
+                            vtIndex = NormalizeIndexAllowMissing(vtIndex, uvs.Count);
+                            vnIndex = NormalizeIndexAllowMissing(vnIndex, normals.Count);
+
+                            refs.Add((vIndex, vtIndex, vnIndex));
                         }
 
-                        if (parts.Length == 5)
+                        for (int i = 1; i < refs.Count - 1; i++)
                         {
-                            FourFace(parts, vertexIndices, uvIndices, normalIndices);
+                            AddFace(refs[0], refs[i], refs[i + 1]);
                         }
+                    }
+
+                    void AddFace((int v, int vt, int vn) a, (int v, int vt, int vn) b, (int v, int vt, int vn) c)
+                    {
+                        faceVertexIndices.Add(a.v);
+                        faceUvIndices.Add(a.vt);
+                        faceNormalIndices.Add(a.vn);
+
+                        faceVertexIndices.Add(b.v);
+                        faceUvIndices.Add(b.vt);
+                        faceNormalIndices.Add(b.vn);
+
+                        faceVertexIndices.Add(c.v);
+                        faceUvIndices.Add(c.vt);
+                        faceNormalIndices.Add(c.vn);
                     }
                 }
 
-                List<VertexPositionNormalTexture> verticePositionTextures = [];
-                Dictionary<(int, int), int> uniqueVertices = new(); // Key: (vertexIndex, uvIndex), Value: new index
+                var unique = new Dictionary<(int, int, int), int>();
+                var finalVerts = new List<VertexPositionNormalTexture>();
+                var finalIndices = new List<int>();
 
-                List<int> finalIndices = [];
-
-                for (int i = 0; i < vertexIndices.Count; i++)
+                for (int i = 0; i < faceVertexIndices.Count; i++)
                 {
-                    var key = (vertexIndices[i], uvIndices[i]);
+                    var key = (faceVertexIndices[i], faceUvIndices[i], faceNormalIndices[i]);
 
-                    if (!uniqueVertices.TryGetValue(key, out int newIndex))
+                    if (!unique.TryGetValue(key, out int newIndex))
                     {
-                        newIndex = verticePositionTextures.Count;
-                        uniqueVertices[key] = newIndex;
-                        verticePositionTextures.Add(new(vertices[vertexIndices[i]], normals[normalIndices[i]], uvs[uvIndices[i]]));
+                        newIndex = finalVerts.Count;
+                        unique[key] = newIndex;
+
+                        Vector3 pos = vertices[key.Item1];
+                        Vector3 normal = key.Item3 >= 0 && key.Item3 < normals.Count ? normals[key.Item3] : Vector3.Zero;
+                        Vector2 uv = key.Item2 >= 0 && key.Item2 < uvs.Count ? uvs[key.Item2] : Vector2.Zero;
+
+                        finalVerts.Add(new VertexPositionNormalTexture(pos, normal, uv));
                     }
 
                     finalIndices.Add(newIndex);
                 }
 
+                bool missingNormals = finalVerts.Any(v => v.Normal == Vector3.Zero);
+                if (missingNormals)
+                {
+                    var accum = new Vector3[finalVerts.Count];
 
-                meshInfoToReturn = new([.. verticePositionTextures], [.. finalIndices]);
+                    for (int i = 0; i < finalIndices.Count; i += 3)
+                    {
+                        int ia = finalIndices[i];
+                        int ib = finalIndices[i + 1];
+                        int ic = finalIndices[i + 2];
+
+                        var pa = finalVerts[ia].Position;
+                        var pb = finalVerts[ib].Position;
+                        var pc = finalVerts[ic].Position;
+
+                        var n = Vector3.Cross(pb - pa, pc - pa);
+                        if (n.LengthSquared > 0)
+                            n.Normalize();
+
+                        accum[ia] += n;
+                        accum[ib] += n;
+                        accum[ic] += n;
+                    }
+
+                    for (int i = 0; i < finalVerts.Count; i++)
+                    {
+                        var n = accum[i];
+                        if (n.LengthSquared > 0)
+                            n.Normalize();
+                        else
+                            n = Vector3.UnitY;
+
+                        var v = finalVerts[i];
+                        finalVerts[i] = new VertexPositionNormalTexture(v.Position, n, v.TexCoord);
+                    }
+                }
+
+                return new MeshInfo(finalVerts.ToArray(), finalIndices.ToArray());
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine("The file could not be read:");
-                Console.WriteLine(e.Message);
+                Console.WriteLine($"OBJ load failed: {ex.Message}");
+                return new MeshInfo(Array.Empty<VertexPositionNormalTexture>(), Array.Empty<int>());
             }
-
-
-            return meshInfoToReturn;
         }
 
-        private void ThreeFace(string[] parts, List<int> vertexIndices, List<int> uvIndices, List<int> normalIndices)
+        private static int ParseIndexSafe(string[] comps, int idx)
         {
-            int[] vertexIndex = new int[3],
-                    uvIndex = new int[3],
-                    normalIndex = new int[3];
+            if (idx >= comps.Length) return -1;
+            if (string.IsNullOrEmpty(comps[idx])) return -1;
 
-            string[] firstVertex = parts[1].Split('/', StringSplitOptions.RemoveEmptyEntries);
-            string[] secondVertex = parts[2].Split('/', StringSplitOptions.RemoveEmptyEntries);
-            string[] thirdVertex = parts[3].Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-            vertexIndex[0] = int.Parse(firstVertex[0]);
-            vertexIndex[1] = int.Parse(secondVertex[0]);
-            vertexIndex[2] = int.Parse(thirdVertex[0]);
-
-            uvIndex[0] = int.Parse(firstVertex[1]);
-            uvIndex[1] = int.Parse(secondVertex[1]);
-            uvIndex[2] = int.Parse(thirdVertex[1]);
-
-            normalIndex[0] = int.Parse(firstVertex[2]);
-            normalIndex[1] = int.Parse(secondVertex[2]);
-            normalIndex[2] = int.Parse(thirdVertex[2]);
-
-            for (int i = 0; i < 3; i++)
-            {
-                vertexIndices.Add(vertexIndex[i] - 1);
-                uvIndices.Add(uvIndex[i] - 1);
-                normalIndices.Add(normalIndex[i] - 1);
-            }
+            return int.TryParse(comps[idx], NumberStyles.Integer, CultureInfo.InvariantCulture, out int v)
+                ? v
+                : -1;
         }
-        private void FourFace(string[] parts, List<int> vertexIndices, List<int> uvIndices, List<int> normalIndices)
+
+        private static int NormalizeIndex(int idx, int count)
         {
-            int[] vertexIndex = new int[6],
-                  uvIndex = new int[6],
-                  normalIndex = new int[6];
+            if (idx == -1) return -1;
+            if (idx < 0) return count + idx;
+            return idx - 1;
+        }
 
-            string[] firstVertex = parts[1].Split('/', StringSplitOptions.RemoveEmptyEntries);
-            string[] secondVertex = parts[2].Split('/', StringSplitOptions.RemoveEmptyEntries);
-            string[] thirdVertex = parts[3].Split('/', StringSplitOptions.RemoveEmptyEntries);
-            string[] fourthVertex = parts[4].Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-            vertexIndex[0] = int.Parse(firstVertex[0]);
-            vertexIndex[1] = int.Parse(secondVertex[0]);
-            vertexIndex[2] = int.Parse(thirdVertex[0]);
-            vertexIndex[3] = int.Parse(thirdVertex[0]);
-            vertexIndex[4] = int.Parse(fourthVertex[0]);
-            vertexIndex[5] = int.Parse(firstVertex[0]);
-
-            uvIndex[0] = int.Parse(firstVertex[1]);
-            uvIndex[1] = int.Parse(secondVertex[1]);
-            uvIndex[2] = int.Parse(thirdVertex[1]);
-            uvIndex[3] = int.Parse(thirdVertex[1]);
-            uvIndex[4] = int.Parse(fourthVertex[1]);
-            uvIndex[5] = int.Parse(firstVertex[1]);
-
-            normalIndex[0] = int.Parse(firstVertex[2]);
-            normalIndex[1] = int.Parse(secondVertex[2]);
-            normalIndex[2] = int.Parse(thirdVertex[2]);
-            normalIndex[3] = int.Parse(thirdVertex[2]);
-            normalIndex[4] = int.Parse(fourthVertex[2]);
-            normalIndex[5] = int.Parse(firstVertex[2]);
-
-            for (int i = 0; i < 6; i++)
-            {
-                vertexIndices.Add(vertexIndex[i] - 1);
-
-                uvIndices.Add(uvIndex[i] - 1);
-
-                normalIndices.Add(normalIndex[i] - 1);
-            }
+        private static int NormalizeIndexAllowMissing(int idx, int count)
+        {
+            if (idx == -1 || count == 0) return -1;
+            if (idx < 0) return count + idx;
+            return idx - 1;
         }
     }
 }

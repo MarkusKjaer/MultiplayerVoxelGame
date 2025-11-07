@@ -1,4 +1,5 @@
 ﻿using OpenTK.Mathematics;
+using System.Runtime.InteropServices;
 
 namespace CubeEngine.Engine.Client.Graphics.Window
 {
@@ -43,6 +44,8 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             );
     }
     */
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public readonly struct VertexPositionNormalTexture(Vector3 position, Vector3 normal, Vector2 texCoord)
     {
         public readonly Vector3 Position { get; } = position;
@@ -56,6 +59,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             new VertexAttribute("TexCoord", 2, 2, 6 * sizeof(float))
         );
     }
+
     /*
     public readonly struct VertexPositionTextureLayer(Vector3 position, Vector2 texCoord, float layer)
     {

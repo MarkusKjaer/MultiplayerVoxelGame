@@ -30,6 +30,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             IndexBuffer = indexBuffer;
 
             int vertexSizeInBytes = VertexBuffer.VertexInfo.SizeInBytes;
+
             VertexAttribute[] attributes = VertexBuffer.VertexInfo.VertexAttributes;
 
             // Generate and bind the vertex array
@@ -61,10 +62,8 @@ namespace CubeEngine.Engine.Client.Graphics.Window
 
         public void Dispose()
         {
-            if (!disposed)
-            {
+            if (disposed)
                 return;
-            }
 
             GL.BindVertexArray(0);
             GL.DeleteVertexArray(VertexArrayHandle);
@@ -72,6 +71,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             disposed = true;
             GC.SuppressFinalize(this);
         }
+
 
     }
 }
