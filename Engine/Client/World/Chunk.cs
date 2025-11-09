@@ -47,7 +47,7 @@ namespace CubeEngine.Engine.Client.World
 
                         int textureLayer = (int)chunkData.Voxels[i, j, k].VoxelType - 1;
 
-                        Vector3 voxelPosition = new Vector3(i, j, k) + chunkData.Position;
+                        Vector3 voxelPosition = new(i, j, k);
 
                         // Define cube vertices relative to the voxel position
                         Vector3 v000 = voxelPosition + new Vector3(0, 0, 0);

@@ -22,7 +22,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             }
         }
 
-        public GameScene CurrentGameScene { get; private set; }
+        public GameSceneWorld CurrentGameScene { get; private set; }
 
         public int WindowWidth { get; private set; }
         public int Windowheight { get; private set; }
@@ -36,7 +36,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
 
         #endregion
 
-        public CubeGameWindow(GameScene currentGameScene, int width = 1920, int height = 1080, string title = "Game1") : base(
+        public CubeGameWindow(GameSceneWorld currentGameScene, int width = 1920, int height = 1080, string title = "Game1") : base(
             GameWindowSettings.Default,
             new NativeWindowSettings()
             {

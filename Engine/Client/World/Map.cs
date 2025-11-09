@@ -6,10 +6,9 @@ namespace CubeEngine.Engine.Client.World
 {
     public class Map
     {
-        public List<Chunk> CurrentChucnks = [];
+        public List<Chunk> CurrentChunks = [];
 
         private int _maxChunkRendering;
-        private int _chunkVoxelSize;
 
         private WorldGen _worldGen;
 
@@ -31,12 +30,15 @@ namespace CubeEngine.Engine.Client.World
 
             Material material = new(vertShaderPath, fragShaderPath, textureArrayManager);
 
-            _chunkVoxelSize = chunkSize;
+            List<Vector2> chunksToGen =
+            [
+                new(0, 0), new(1, 0), new(2, 0), new(3, 0), new(4, 0),
+                new(0, 1), new(1, 1), new(2, 1), new(3, 1), new(4, 1),
+                new(0, 2), new(1, 2), new(2, 2), new(3, 2), new(4, 2),
+                new(0, 3), new(1, 3), new(2, 3), new(3, 3), new(4, 3),
+                new(0, 4), new(1, 4), new(2, 4), new(3, 4), new(4, 4),
+            ];
 
-            List<Vector3> chunksToGen = [new(0, 0, 0),
-            new(1,0,0),
-            new(2,0,0),
-            new(2,0,1)];
 
             if (seed == 0) 
             {
@@ -47,27 +49,27 @@ namespace CubeEngine.Engine.Client.World
                 _worldGen = new WorldGen(seed);
             }
 
-            var newChunks = _worldGen.GenPartOfWorld(_chunkVoxelSize, chunksToGen);
+            var newChunks = _worldGen.GenPartOfWorld(chunkSize, chunksToGen);
 
             for (int i = 0; i < newChunks.Count; i++)
             {
-                CurrentChucnks.Add(new(newChunks[i], material));
+                CurrentChunks.Add(new(newChunks[i], material));
             }
         }
 
         public void UpdateMeshs(Camera camera, int windowWidth, int windowheight)
         {
-            for (int i = 0; i < CurrentChucnks.Count; i++)
+            for (int i = 0; i < CurrentChunks.Count; i++)
             {
-                CurrentChucnks[i].OnUpdate();
+                CurrentChunks[i].OnUpdate();
             }
         }
 
         public void Render()
         {
-            for (int i = 0; i < CurrentChucnks.Count; i++)
+            for (int i = 0; i < CurrentChunks.Count; i++)
             {
-                CurrentChucnks[i].Render();
+                CurrentChunks[i].Render();
             }
         }
     }

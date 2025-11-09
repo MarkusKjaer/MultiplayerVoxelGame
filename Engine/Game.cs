@@ -4,6 +4,7 @@ using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
 using CubeEngine.Engine.Entities;
+using CubeEngine.Engine.Entities.Player;
 using CubeEngine.Engine.Enum;
 using CubeEngine.Engine.Server;
 using CubeEngine.Util;
@@ -47,8 +48,8 @@ namespace CubeEngine.Engine
 
 
 
-            PlayerFlyControllerClient player = new();
-            Camera camera = new(new Vector3(0, 0, 10))
+            PlayerCharacter player = new(new(80, 0, 80));
+            PlayerCamera camera = new(new Vector3(0, 2, 0), player)
             {
                 Parent = player
             };
@@ -74,14 +75,15 @@ namespace CubeEngine.Engine
             TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
             Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
 
-            VisualGameObject abe = new()
-            {
-                Mesh = new(meshInfo, material),
-                Parent = player,
-                Orientation = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(180f))
-            };
+            //VisualGameObject playerModel = new()
+            //{
+            //    Mesh = new(meshInfo, material),
+            //    Parent = player,
+            //    Orientation = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(180f)),
+            //    Position = new(0, 1, 0)
+            //};
 
-            abe.Instantiate();
+            //playerModel.Instantiate();
 
             if (networkRole != NetworkRole.Server && gameWindow != null)
             {
