@@ -12,7 +12,7 @@ namespace CubeEngine.Engine.Server
 
         private readonly UdpClient _udpServer;
         private TcpListener? _tcpListener;
-        private readonly List<TcpClient> _tcpClients = [];
+        private readonly Dictionary<TcpClient, ClientInstance> _clientInstances = new();
         private bool _running;
 
         public GameServer(int udpPort, int tcpPort)
@@ -38,8 +38,8 @@ namespace CubeEngine.Engine.Server
             _running = false;
             _udpServer.Close();
             _tcpListener?.Stop();
-            foreach (var client in _tcpClients)
-                client.Close();
+            foreach (var client in _clientInstances)
+                client.Value.TcpClient.Close();
         }
 
         #region UDP
@@ -53,7 +53,6 @@ namespace CubeEngine.Engine.Server
                     UdpReceiveResult result = await _udpServer.ReceiveAsync();
                     string message = Encoding.UTF8.GetString(result.Buffer);
 
-                    // Notify subscribers
                     OnClientMessage?.Invoke(result.RemoteEndPoint, message);
                 }
                 catch (ObjectDisposedException) { break; }
@@ -80,7 +79,11 @@ namespace CubeEngine.Engine.Server
                 try
                 {
                     TcpClient tcpClient = await _tcpListener!.AcceptTcpClientAsync();
-                    _tcpClients.Add(tcpClient);
+
+                    var clientInstance = new ClientInstance(tcpClient);
+                    _clientInstances[tcpClient] = clientInstance;
+
+                    Console.WriteLine($"New client connected: {clientInstance}");
 
                     _ = HandleTcpClient(tcpClient);
                 }
@@ -88,6 +91,7 @@ namespace CubeEngine.Engine.Server
                 catch (Exception ex) { Console.WriteLine($"TCP Server error: {ex.Message}"); }
             }
         }
+
 
         private async Task HandleTcpClient(TcpClient client)
         {
@@ -113,8 +117,13 @@ namespace CubeEngine.Engine.Server
             }
             finally
             {
+                if (_clientInstances.ContainsKey(client))
+                {
+                    Console.WriteLine($"Client disconnected: {_clientInstances[client]}");
+                    _clientInstances.Remove(client);
+                }
+
                 client.Close();
-                _tcpClients.Remove(client);
             }
         }
 
