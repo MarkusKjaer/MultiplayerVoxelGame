@@ -12,7 +12,7 @@ namespace CubeEngine.Engine.Client.World
 
         private WorldGen _worldGen;
 
-        public Map(int chunkSize, int seed, TextureArrayManager textureArrayManager)
+        public Map(int chunkSize, int maxWorldHeight, int seed, TextureArrayManager textureArrayManager)
         {
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
@@ -49,7 +49,7 @@ namespace CubeEngine.Engine.Client.World
                 _worldGen = new WorldGen(seed);
             }
 
-            var newChunks = _worldGen.GenPartOfWorld(chunkSize, chunksToGen);
+            var newChunks = _worldGen.GenPartOfWorld(chunkSize, maxWorldHeight, chunksToGen);
 
             for (int i = 0; i < newChunks.Count; i++)
             {

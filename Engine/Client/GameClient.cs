@@ -1,5 +1,5 @@
-﻿using System.Net.Sockets;
-using System.Text;
+﻿using CubeEngine.Engine.Network;
+using System.Net.Sockets;
 
 namespace CubeEngine.Engine.Client
 {
@@ -7,7 +7,7 @@ namespace CubeEngine.Engine.Client
     {
         public static GameClient? Instance { get; private set; }
 
-        public event Action<string>? OnServerMessage;
+        public event Action<Packet>? OnServerMessage;
 
         private UdpClient _udpClient;
         private TcpClient? _tcpClient;
@@ -15,11 +15,9 @@ namespace CubeEngine.Engine.Client
 
         public GameClient(string address, int udpPort, int tcpPort)
         {
-            // UDP setup
             _udpClient = new UdpClient();
             _udpClient.Connect(address, udpPort);
 
-            // TCP setup
             _tcpClient = new TcpClient();
             _tcpClient.Connect(address, tcpPort);
             _tcpStream = _tcpClient.GetStream();
@@ -39,39 +37,74 @@ namespace CubeEngine.Engine.Client
             while (true)
             {
                 UdpReceiveResult result = await _udpClient.ReceiveAsync();
-                string response = Encoding.UTF8.GetString(result.Buffer);
-                OnServerMessage?.Invoke($"[UDP] {response}");
+                byte[] buffer = result.Buffer;
+
+                try
+                {
+                    Packet packet = Packet.Deserialize(buffer);
+                    OnServerMessage?.Invoke(packet);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"Failed to deserialize UDP packet: {e}");
+                }
             }
         }
 
-        public async Task SendUdpMessage(string message)
+        public async Task SendUdpMessage(Packet packet)
         {
-            byte[] data = Encoding.UTF8.GetBytes(message);
-            await _udpClient.SendAsync(data, data.Length);
+            if (_udpClient != null)
+            {
+                byte[] data = packet.Serialize();
+                await _udpClient.SendAsync(data, data.Length);
+            }
         }
         #endregion
 
         #region TCP
         private async Task ReceiveTcpLoop()
         {
-            byte[] buffer = new byte[1024];
+            byte[] lengthBuffer = new byte[4];
 
             while (_tcpClient != null && _tcpClient.Connected)
             {
-                int byteCount = await _tcpStream!.ReadAsync(buffer);
-                if (byteCount == 0) break;
+                int read = await _tcpStream.ReadAsync(lengthBuffer, 0, 4);
+                if (read == 0) break;
 
-                string response = Encoding.UTF8.GetString(buffer, 0, byteCount);
-                OnServerMessage?.Invoke($"[TCP] {response}");
+                int packetLength = BitConverter.ToInt32(lengthBuffer, 0);
+
+                byte[] packetBuffer = new byte[packetLength];
+                int offset = 0;
+
+                while (offset < packetLength)
+                {
+                    int bytesRead = await _tcpStream.ReadAsync(packetBuffer, offset, packetLength - offset);
+                    if (bytesRead == 0) break; 
+                    offset += bytesRead;
+                }
+
+                try
+                {
+                    Packet packet = Packet.Deserialize(packetBuffer);
+                    OnServerMessage?.Invoke(packet);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"Failed to deserialize TCP packet: {e}");
+                }
             }
         }
 
-        public async Task SendTcpMessage(string message)
+        public async Task SendTcpMessage(Packet packet)
         {
             if (_tcpStream != null && _tcpClient!.Connected)
             {
-                byte[] data = Encoding.UTF8.GetBytes(message);
-                await _tcpStream.WriteAsync(data);
+                byte[] data = packet.Serialize();
+                byte[] lengthPrefix = BitConverter.GetBytes(data.Length);
+
+                await _tcpStream.WriteAsync(lengthPrefix, 0, lengthPrefix.Length);
+                await _tcpStream.WriteAsync(data, 0, data.Length);
+                await _tcpStream.FlushAsync();
             }
         }
         #endregion

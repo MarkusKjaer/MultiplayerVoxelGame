@@ -20,7 +20,7 @@ namespace CubeEngine.Engine
 
         public GameServer? Server { get; private set; }
 
-        public void Run(NetworkRole networkRole)
+        public async void Run(NetworkRole networkRole)
         {
             CurrentGameScene = new("testGameScene");
 
@@ -41,54 +41,54 @@ namespace CubeEngine.Engine
             if (networkRole == NetworkRole.Client || networkRole == NetworkRole.Host)
             {
                 // Small delay to ensure server is listening
-                Task.Delay(20).Wait();
+                await Task.Delay(20);
                 Client = new GameClient("localhost", 8000, 9000);
                 Client.Start();
+            
+
+                PlayerCharacter player = new(new(80, 0, 80));
+                PlayerCamera camera = new(new Vector3(0, 2, 0), player)
+                {
+                    Parent = player
+                };
+
+                player.Instantiate();
+                camera.Instantiate();
+                CurrentGameScene.ActiveCamera = camera;
+
+                OBJFileReader oBJFileReader = new OBJFileReader();
+
+                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
+                string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
+
+                Noise.LoadHeightmap(Path.Combine(parentDirectory, "Util", "NoiseImage", "perlin.png"));
+
+
+                MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
+
+                TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
+                CurrentGameScene.Map = new(32, 1, textureArrayManagerForMap);
+
+                TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
+                Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
+
+                //VisualGameObject playerModel = new()
+                //{
+                //    Mesh = new(meshInfo, material),
+                //    Parent = player,
+                //    Orientation = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(180f)),
+                //    Position = new(0, 1, 0)
+                //};
+
+                //playerModel.Instantiate();
+
+                if (networkRole != NetworkRole.Server && gameWindow != null)
+                {
+                    gameWindow.Run();
+                }
             }
 
-
-
-            PlayerCharacter player = new(new(80, 0, 80));
-            PlayerCamera camera = new(new Vector3(0, 2, 0), player)
-            {
-                Parent = player
-            };
-
-            player.Instantiate();
-            camera.Instantiate();
-            CurrentGameScene.ActiveCamera = camera;
-
-            OBJFileReader oBJFileReader = new OBJFileReader();
-
-            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
-            string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
-
-            Noise.LoadHeightmap(Path.Combine(parentDirectory, "Util", "NoiseImage", "perlin.png"));
-
-
-            MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
-
-            TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
-            CurrentGameScene.Map = new(32, 1, textureArrayManagerForMap);
-
-            TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
-            Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
-
-            //VisualGameObject playerModel = new()
-            //{
-            //    Mesh = new(meshInfo, material),
-            //    Parent = player,
-            //    Orientation = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(180f)),
-            //    Position = new(0, 1, 0)
-            //};
-
-            //playerModel.Instantiate();
-
-            if (networkRole != NetworkRole.Server && gameWindow != null)
-            {
-                gameWindow.Run();
-            }
         }
 
         private TextureArrayManager LoadWorldTextures(string parentDirectory)

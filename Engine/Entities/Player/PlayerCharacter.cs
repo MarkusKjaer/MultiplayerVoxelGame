@@ -1,12 +1,6 @@
 ﻿using CubeEngine.Engine.Client.Graphics.Window;
 using OpenTK.Mathematics;
-using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CubeEngine.Engine.Entities.Player
 {
@@ -33,8 +27,6 @@ namespace CubeEngine.Engine.Entities.Player
             UpdateMovement();
             ApplyGravity();
         }
-
-        
 
         private void UpdateMovement()
         {
@@ -95,10 +87,10 @@ namespace CubeEngine.Engine.Entities.Player
             foreach (var chunk in map.CurrentChunks)
             {
                 var data = chunk.ChunkData;
-                Vector3 chunkOrigin = data.Position;
+                Vector2 chunkOrigin = data.Position;
 
                 int cx = (int)(wx - chunkOrigin.X);
-                int cz = (int)(wz - chunkOrigin.Z);
+                int cz = (int)(wz - chunkOrigin.Y);
 
                 if (cx < 0 || cz < 0 ||
                     cx >= data.Voxels.GetLength(0) ||

@@ -58,7 +58,7 @@ namespace CubeEngine.Engine.Client
 
             if (input.IsKeyDown(Keys.G))
             {
-                _ = GameClient.Instance?.SendTcpMessage("GGG");
+                //_ = GameClient.Instance?.SendTcpMessage();
             }
         }
         public void Move(Vector3 direction, float amount)

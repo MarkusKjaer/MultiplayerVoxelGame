@@ -54,11 +54,6 @@ public class PlayerFlyCamera : Camera
             moveDir = Vector3.Normalize(moveDir);
             Move(moveDir, _moveSpeed);
         }
-
-        if(input.IsKeyDown(Keys.G))
-        {
-            _ = GameClient.Instance?.SendTcpMessage("GGG");
-        }
     }
 
     public void Move(Vector3 direction, float amount)

@@ -175,7 +175,7 @@ namespace CubeEngine.Engine.Client.World
 
         public void OnUpdate()
         {
-            Matrix4 translation = Matrix4.CreateTranslation(_chunkData.Position);
+            Matrix4 translation = Matrix4.CreateTranslation(new( _chunkData.Position.X, 0, _chunkData.Position.Y));
 
             ChunkMesh.Model = translation;
 
