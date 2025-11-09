@@ -1,5 +1,7 @@
-﻿using CubeEngine.Engine.Client.Graphics.MeshObject;
+﻿using CubeEngine.Engine.Client.Graphics;
+using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
+using CubeEngine.Engine.Network;
 using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Client.World
@@ -32,31 +34,20 @@ namespace CubeEngine.Engine.Client.World
 
             _material = new(vertShaderPath, fragShaderPath, textureArrayManager);
 
-            //List<Vector2> chunksToGen =
-            //[
-            //    new(0, 0), new(1, 0), new(2, 0), new(3, 0), new(4, 0),
-            //    new(0, 1), new(1, 1), new(2, 1), new(3, 1), new(4, 1),
-            //    new(0, 2), new(1, 2), new(2, 2), new(3, 2), new(4, 2),
-            //    new(0, 3), new(1, 3), new(2, 3), new(3, 3), new(4, 3),
-            //    new(0, 4), new(1, 4), new(2, 4), new(3, 4), new(4, 4),
-            //];
+            GameClient.Instance.OnServerMessage += OnServerMessage;
+        }
 
+        private void OnServerMessage(Packet packet)
+        {
+            switch (packet)
+            {
+                case ChunkInfoPacket chunkInfoPacket:
+                    GLActionQueue.Enqueue(() => AddNewChunk(chunkInfoPacket.ChunkData));
+                    break;
+                default:
+                    break;
+            }
 
-            //if (seed == 0) 
-            //{
-            //    _worldGen = new WorldGen();
-            //}
-            //else
-            //{
-            //    _worldGen = new WorldGen(seed);
-            //}
-
-            //var newChunks = _worldGen.GenPartOfWorld(chunkSize, maxWorldHeight, chunksToGen);
-
-            //for (int i = 0; i < newChunks.Count; i++)
-            //{
-            //    CurrentChunks.Add(new(newChunks[i], material));
-            //}
         }
 
         public void AddNewChunk(ChunkData chunkData)

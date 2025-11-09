@@ -32,8 +32,6 @@ namespace CubeEngine.Engine
                 Server.Start();
             }
 
-            await Task.Delay(20);
-
             if (role == NetworkRole.Client || role == NetworkRole.Host)
             {
                 Client = new GameClient("localhost", 8000, 9000);

@@ -93,6 +93,8 @@ namespace CubeEngine.Engine.Client.Graphics.Window
 
             CurrentGameScene.Update();
 
+            GLActionQueue.ProcessAll();
+
             base.OnUpdateFrame(args);
         }
 

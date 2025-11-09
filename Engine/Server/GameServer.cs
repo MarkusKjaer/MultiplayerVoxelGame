@@ -13,7 +13,8 @@ namespace CubeEngine.Engine.Server
 
         private readonly UdpClient _udpServer;
         private TcpListener? _tcpListener;
-        private readonly Dictionary<TcpClient, ClientInstance> _clientInstances = new();
+        public readonly Dictionary<TcpClient, ClientInstance> ClientInstances = new();
+        public readonly Dictionary<IPEndPoint, ClientInstance> ClientsByEndpoint = new();
         private bool _running;
 
         public ServerMap ServerMap { get; }
@@ -43,7 +44,7 @@ namespace CubeEngine.Engine.Server
             _running = false;
             _udpServer.Close();
             _tcpListener?.Stop();
-            foreach (var client in _clientInstances)
+            foreach (var client in ClientInstances)
                 client.Value.TcpClient.Close();
         }
 
@@ -86,9 +87,13 @@ namespace CubeEngine.Engine.Server
                 {
                     TcpClient tcpClient = await _tcpListener!.AcceptTcpClientAsync();
                     var clientInstance = new ClientInstance(tcpClient);
-                    _clientInstances[tcpClient] = clientInstance;
+
+                    ClientInstances[tcpClient] = clientInstance;
+
+                    ClientsByEndpoint[clientInstance.TcpEndPoint] = clientInstance;
 
                     Console.WriteLine($"New client connected: {clientInstance}");
+
                     _ = HandleTcpClient(tcpClient);
                 }
                 catch (ObjectDisposedException) { break; }
@@ -130,13 +135,14 @@ namespace CubeEngine.Engine.Server
             }
             finally
             {
-                if (_clientInstances.ContainsKey(client))
+                if (ClientInstances.ContainsKey(client))
                 {
-                    Console.WriteLine($"Client disconnected: {_clientInstances[client]}");
-                    _clientInstances.Remove(client);
-                }
+                    var ci = ClientInstances[client];
+                    ClientsByEndpoint.Remove(ci.TcpEndPoint);
+                    ClientInstances.Remove(client);
 
-                client.Close();
+                    Console.WriteLine($"Client disconnected: {ci}");
+                }
             }
         }
 

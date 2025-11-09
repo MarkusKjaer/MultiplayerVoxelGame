@@ -1,5 +1,7 @@
 ﻿using CubeEngine.Engine.Client.World;
+using CubeEngine.Engine.Network;
 using OpenTK.Mathematics;
+using System.Net;
 
 namespace CubeEngine.Engine.Server
 {
@@ -39,8 +41,28 @@ namespace CubeEngine.Engine.Server
 
             for (int i = 0; i < newChunks.Count; i++)
             {
-                CurrentChunks.Add(newChunks[i].Position / 16, new ServerChunk(newChunks[i]));
+                CurrentChunks.Add(newChunks[i].Position / ChunkSize, new ServerChunk(newChunks[i]));
+            }
+
+            GameServer.Instance.OnClientMessage += OnClientMessage;
+        }
+
+        private void OnClientMessage(IPEndPoint sender, Packet packet)
+        {
+            if (!GameServer.Instance.ClientsByEndpoint.TryGetValue(sender, out var client))
+                return;  // Unknown client
+
+            switch (packet)
+            {
+                case ChunkRequestPacket req:
+                    ChunkData chunk = CurrentChunks[req.ChunkPos].ChunkData;
+
+                    ChunkInfoPacket response = new(chunk, ChunkSize, MaxWorldHeight);
+                    GameServer.Instance.SendTcpPacket(client.TcpClient, response);
+
+                    break;
             }
         }
+
     }
 }

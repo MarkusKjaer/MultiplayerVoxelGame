@@ -1,4 +1,6 @@
-﻿using CubeEngine.Engine.Client.Graphics.Window;
+﻿using CubeEngine.Engine.Client;
+using CubeEngine.Engine.Client.Graphics.Window;
+using CubeEngine.Engine.Network;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -16,8 +18,29 @@ namespace CubeEngine.Engine.Entities.Player
         public PlayerCharacter(Vector3 position)
         {
             Position = position;
+
+            GameClient.Instance.OnServerMessage += OnServerMessage;
+
+            List<Vector2> chunksToGen =
+            [
+                new(0, 0), new(1, 0), new(2, 0), new(3, 0), new(4, 0),
+                new(0, 1), new(1, 1), new(2, 1), new(3, 1), new(4, 1),
+                new(0, 2), new(1, 2), new(2, 2), new(3, 2), new(4, 2),
+                new(0, 3), new(1, 3), new(2, 3), new(3, 3), new(4, 3),
+                new(0, 4), new(1, 4), new(2, 4), new(3, 4), new(4, 4),
+            ];
+
+            foreach (var chunk in chunksToGen)
+            {
+                ChunkRequestPacket chunkRequestPacket = new(chunk);
+                _ = GameClient.Instance.SendTcpMessage(chunkRequestPacket);
+            }
         }
 
+        private void OnServerMessage(Packet packet)
+        {
+            
+        }
 
         public override void OnUpdate()
         {
@@ -101,7 +124,7 @@ namespace CubeEngine.Engine.Entities.Player
                 {
                     if (data.Voxels[cx, y, cz].VoxelType != CubeEngine.Engine.Client.World.Enum.VoxelType.Empty)
                     {
-                        float worldY = chunkOrigin.Y + y + 1;
+                        float worldY = y + 1;
                         if (worldY > highestSolid)
                             highestSolid = worldY;
 

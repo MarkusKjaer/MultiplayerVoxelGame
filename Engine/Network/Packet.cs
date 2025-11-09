@@ -47,6 +47,8 @@ namespace CubeEngine.Engine.Network
                     return new PlayerInputPacket(buffer);
                 case PacketType.ChunkInfo:
                     return new ChunkInfoPacket(buffer);
+                case PacketType.ChunkRequest:
+                    return new ChunkRequestPacket(buffer);
                 default:
                     throw new Exception($"Unknown packet type: {packetType}");
             }
