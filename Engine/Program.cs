@@ -15,13 +15,17 @@ namespace CubeEngine.Engine
             switch (input)
             {
                 case "host":
-                    game.Run(NetworkRole.Host);
+                    game.StartNetworkingAsync(NetworkRole.Host);
+                    game.Run();
                     break;
                 case "client":
-                    game.Run(NetworkRole.Client);
+                    game.StartNetworkingAsync(NetworkRole.Client);
+                    game.Run();
                     break;
                 case "server":
-                    game.Run(NetworkRole.Server);
+                    game.StartNetworkingAsync(NetworkRole.Server);
+                    Console.WriteLine("Server running. Press Enter to exit.");
+                    Console.ReadLine();
                     break;
                 default:
                     Console.WriteLine("Invalid role. Please enter 'host', 'client', or 'server'.");

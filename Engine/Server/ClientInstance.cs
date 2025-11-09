@@ -27,16 +27,16 @@ namespace CubeEngine.Engine.Server
 
         private void Setup()
         {
-            ServerMap serverMap = GameServer.Instance.ServerMap;
-            List<ServerChunk> serverChunks = serverMap.CurrentChunks;
-            int chunkSize = serverMap.ChunkSize;
-            int maxWorldHeight = serverMap.MaxWorldHeight;
+            //ServerMap serverMap = GameServer.Instance.ServerMap;
+            //List<ServerChunk> serverChunks = serverMap.CurrentChunks;
+            //int chunkSize = serverMap.ChunkSize;
+            //int maxWorldHeight = serverMap.MaxWorldHeight;
 
-            foreach (ServerChunk chunk in serverChunks) 
-            {
-                Packet packet = new ChunkInfoPacket(chunk.ChunkData, chunkSize, maxWorldHeight);
-                _ = GameServer.Instance.SendTcpPacket(TcpClient, packet);
-            }
+            //foreach (ServerChunk chunk in serverChunks) 
+            //{
+            //    Packet packet = new ChunkInfoPacket(chunk.ChunkData, chunkSize, maxWorldHeight);
+            //    _ = GameServer.Instance.SendTcpPacket(TcpClient, packet);
+            //}
         }
 
         public override string ToString()

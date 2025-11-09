@@ -14,16 +14,12 @@ namespace CubeEngine.Engine.Client.World
         {
             _seed = seed;
             Random rand = new(_seed);
-
-            
         }
 
         public WorldGen()
         {
             _seed = Guid.NewGuid().GetHashCode();
             Random rand = new(_seed);
-
-
         }
 
         public List<ChunkData> GenPartOfWorld(int chunkSize, int maxWorldHeight, List<Vector2> chunksToGenPosition)

@@ -9,5 +9,6 @@
         PlayerInput,
         PlayerState,
         ChunkInfo,
+        ChunkRequest,
     }
 }

@@ -5,7 +5,7 @@ namespace CubeEngine.Engine.Server
 {
     public class ServerMap
     {
-        public List<ServerChunk> CurrentChunks = [];
+        public Dictionary<Vector2, ServerChunk> CurrentChunks = [];
 
         private WorldGen _worldGen;
 
@@ -39,7 +39,7 @@ namespace CubeEngine.Engine.Server
 
             for (int i = 0; i < newChunks.Count; i++)
             {
-                CurrentChunks.Add(new(newChunks[i]));
+                CurrentChunks.Add(newChunks[i].Position / 16, new ServerChunk(newChunks[i]));
             }
         }
     }

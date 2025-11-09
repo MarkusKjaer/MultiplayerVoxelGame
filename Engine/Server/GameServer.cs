@@ -16,7 +16,7 @@ namespace CubeEngine.Engine.Server
         private readonly Dictionary<TcpClient, ClientInstance> _clientInstances = new();
         private bool _running;
 
-        public ServerMap ServerMap { get; } = new(32, 64, 1);
+        public ServerMap ServerMap { get; }
 
         public GameServer(int udpPort, int tcpPort)
         {
@@ -27,6 +27,8 @@ namespace CubeEngine.Engine.Server
             Console.WriteLine($"TCP Server started on port {tcpPort}");
 
             Instance = this;
+
+            ServerMap = new(32, 64, 1);
         }
 
         public void Start()
