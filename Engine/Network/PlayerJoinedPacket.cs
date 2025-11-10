@@ -2,13 +2,17 @@
 
 namespace CubeEngine.Engine.Network
 {
-    public class ConnectPacket : Packet
+    public class PlayerJoinedPacket : Packet
     {
+        public int PlayerId { get; set; }
         public string PlayerName { get; set; } = string.Empty;
 
-        public ConnectPacket(byte[] buffer) : base(PacketType.Connect)
+        public PlayerJoinedPacket(byte[] buffer) : base(PacketType.PlayerJoined)
         {
-            int index = 2;
+            int index = 2; 
+
+            PlayerId = BitConverter.ToInt32(buffer, index);
+            index += 4;
 
             ushort nameLength = BitConverter.ToUInt16(buffer, index);
             index += 2;
@@ -16,8 +20,9 @@ namespace CubeEngine.Engine.Network
             PlayerName = Encoding.UTF8.GetString(buffer, index, nameLength);
         }
 
-        public ConnectPacket(string playerName) : base(PacketType.Connect)
+        public PlayerJoinedPacket(int playerId, string playerName) : base(PacketType.PlayerJoined)
         {
+            PlayerId = playerId;
             PlayerName = playerName;
         }
 
@@ -28,6 +33,7 @@ namespace CubeEngine.Engine.Network
 
             var blocks = new List<byte[]>
             {
+                BitConverter.GetBytes(PlayerId),
                 BitConverter.GetBytes(nameLength),
                 nameBytes
             };

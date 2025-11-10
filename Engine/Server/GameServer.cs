@@ -17,12 +17,17 @@ namespace CubeEngine.Engine.Server
         public readonly Dictionary<IPEndPoint, ClientInstance> ClientsByEndpoint = new();
         private bool _running;
 
+        public const int _targetTick = 20;
+        public const float ServerDeltaTime = 1f / _targetTick;
+
+        public TaskCompletionSource<bool> ReadyTcs { get; } = new();
+
         public ServerMap ServerMap { get; }
 
-        public GameServer(int udpPort, int tcpPort)
+        public GameServer(int tcpPort, int udpPort)
         {
-            _udpServer = new UdpClient(udpPort);
             _tcpListener = new TcpListener(IPAddress.Any, tcpPort);
+            _udpServer = new UdpClient(udpPort);
 
             Console.WriteLine($"UDP Server started on port {udpPort}");
             Console.WriteLine($"TCP Server started on port {tcpPort}");
@@ -32,9 +37,19 @@ namespace CubeEngine.Engine.Server
             ServerMap = new(32, 64, 1);
         }
 
-        public void Start()
+        public async Task StartAsync()
         {
             _running = true;
+
+            _tcpListener?.Start();
+
+            Console.WriteLine("Server is starting...");
+
+            // Mark that server sockets are initialized
+            ReadyTcs.TrySetResult(true);
+
+            // Start background loops
+            _ = TcpTickLoop();
             _ = ReceiveUdpLoop();
             _ = AcceptTcpClientsLoop();
         }
@@ -67,9 +82,9 @@ namespace CubeEngine.Engine.Server
             }
         }
 
-        public void SendUdpMessage(IPEndPoint client, string message)
+        public void SendUdpMessage(IPEndPoint client, Packet packet)
         {
-            byte[] data = Encoding.UTF8.GetBytes(message);
+            byte[] data = packet.Serialize();
             _udpServer.Send(data, data.Length, client);
         }
 
@@ -90,7 +105,7 @@ namespace CubeEngine.Engine.Server
 
                     ClientInstances[tcpClient] = clientInstance;
 
-                    ClientsByEndpoint[clientInstance.TcpEndPoint] = clientInstance;
+                    ClientsByEndpoint[clientInstance.EndPoint] = clientInstance;
 
                     Console.WriteLine($"New client connected: {clientInstance}");
 
@@ -138,7 +153,7 @@ namespace CubeEngine.Engine.Server
                 if (ClientInstances.ContainsKey(client))
                 {
                     var ci = ClientInstances[client];
-                    ClientsByEndpoint.Remove(ci.TcpEndPoint);
+                    ClientsByEndpoint.Remove(ci.EndPoint);
                     ClientInstances.Remove(client);
 
                     Console.WriteLine($"Client disconnected: {ci}");
@@ -156,6 +171,41 @@ namespace CubeEngine.Engine.Server
                 await client.GetStream().WriteAsync(lengthPrefix, 0, lengthPrefix.Length);
                 await client.GetStream().WriteAsync(data, 0, data.Length);
                 await client.GetStream().FlushAsync();
+            }
+        }
+
+        #endregion
+
+        #region UDP Tick Sender
+
+        private async Task TcpTickLoop()
+        {
+            int delay = 1000 / _targetTick;
+
+            while (_running)
+            {
+                try
+                {
+                    SendPlayerInfoTick();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending UDP tick: {ex.Message}");
+                }
+
+                await Task.Delay(delay);
+            }
+        }
+
+        private void SendPlayerInfoTick()
+        {
+            foreach (var client in ClientInstances)
+            {
+                foreach (var clientInfoToSend in ClientInstances)
+                {
+                    PlayerStatePacket playerStatePacket = new(clientInfoToSend.Value.Id, clientInfoToSend.Value.Position, clientInfoToSend.Value.Orientation);
+                    _ = SendTcpPacket(client.Value.TcpClient, playerStatePacket);
+                }
             }
         }
 

@@ -1,4 +1,5 @@
-﻿using System.Xml.Linq;
+﻿using System.Threading.Tasks;
+using System.Xml.Linq;
 using CubeEngine.Engine.Client;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window;
@@ -29,7 +30,7 @@ namespace CubeEngine.Engine
                 Noise.LoadHeightmap(Path.Combine(parentDirectory, "Util", "NoiseImage", "perlin.png"));
 
                 Server = new GameServer(8000, 9000);
-                Server.Start();
+                await Server.StartAsync();
             }
 
             if (role == NetworkRole.Client || role == NetworkRole.Host)

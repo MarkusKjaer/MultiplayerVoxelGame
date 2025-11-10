@@ -1,6 +1,7 @@
 ﻿using CubeEngine.Engine.Client;
 using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Network;
+using CubeEngine.Util;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -19,7 +20,7 @@ namespace CubeEngine.Engine.Entities.Player
         {
             Position = position;
 
-            GameClient.Instance.OnServerMessage += OnServerMessage;
+            GameClient.Instance.ServerMessage += OnServerMessage;
 
             List<Vector2> chunksToGen =
             [
@@ -39,7 +40,14 @@ namespace CubeEngine.Engine.Entities.Player
 
         private void OnServerMessage(Packet packet)
         {
-            
+            switch (packet)
+            {
+                case PlayerStatePacket playerStatePacket:
+                    Console.WriteLine(playerStatePacket.Position);
+                    break;
+                default:
+                    break;
+            }
         }
 
         public override void OnUpdate()
@@ -64,7 +72,7 @@ namespace CubeEngine.Engine.Entities.Player
             if (moveDir != Vector3.Zero)
             {
                 moveDir = Vector3.Normalize(moveDir);
-                Move(moveDir, _moveSpeed);
+                Move(moveDir, _moveSpeed * (float)Time.DeltaTime);
             }
 
             if (input.IsKeyDown(Keys.Space) && _isGrounded)
@@ -72,16 +80,21 @@ namespace CubeEngine.Engine.Entities.Player
                 _verticalVelocity = _jumpForce;
                 _isGrounded = false;
             }
+
+            PlayerInputPacket playerInputPacket = new();
+
+            GameClient.Instance.SendTcpMessage()
         }
+
 
         private void ApplyGravity()
         {
             float groundY = GetGroundHeight(Position);
 
             if (!_isGrounded)
-                _verticalVelocity += _gravity;
+                _verticalVelocity += _gravity * (float)Time.DeltaTime;
 
-            Position += new Vector3(0, _verticalVelocity, 0);
+            Position += new Vector3(0, _verticalVelocity * (float)Time.DeltaTime, 0);
 
             if (Position.Y <= groundY)
             {
@@ -94,7 +107,6 @@ namespace CubeEngine.Engine.Entities.Player
                 _isGrounded = false;
             }
         }
-
 
         private float GetGroundHeight(Vector3 position)
         {
@@ -122,7 +134,7 @@ namespace CubeEngine.Engine.Entities.Player
 
                 for (int y = data.Voxels.GetLength(1) - 1; y >= 0; y--)
                 {
-                    if (data.Voxels[cx, y, cz].VoxelType != CubeEngine.Engine.Client.World.Enum.VoxelType.Empty)
+                    if (data.Voxels[cx, y, cz].VoxelType != Client.World.Enum.VoxelType.Empty)
                     {
                         float worldY = y + 1;
                         if (worldY > highestSolid)
@@ -196,5 +208,7 @@ namespace CubeEngine.Engine.Entities.Player
 
             Position = newPos;
         }
+
+
     }
 }

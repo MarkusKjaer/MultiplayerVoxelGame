@@ -1,5 +1,6 @@
 ﻿using CubeEngine.Engine.Client;
 using CubeEngine.Engine.Client.Graphics.Window;
+using CubeEngine.Engine.Network;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 
@@ -39,6 +40,9 @@ namespace CubeEngine.Engine.Entities.Player
             _character.Rotate(xoffset, 0);
 
             this.Rotate(0, yoffset);
+
+            var rotationPacket = new PlayerRotationPacket(clientId, xRotation, yRotation);
+
         }
 
 

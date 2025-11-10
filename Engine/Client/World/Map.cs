@@ -34,7 +34,7 @@ namespace CubeEngine.Engine.Client.World
 
             _material = new(vertShaderPath, fragShaderPath, textureArrayManager);
 
-            GameClient.Instance.OnServerMessage += OnServerMessage;
+            GameClient.Instance.ServerMessage += OnServerMessage;
         }
 
         private void OnServerMessage(Packet packet)

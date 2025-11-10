@@ -5,10 +5,11 @@
         Ping = 1,
         Connect,
         Disconnect,
-        PlayerInfo,
+        PlayerJoined,
         PlayerInput,
         PlayerState,
         ChunkInfo,
         ChunkRequest,
+        PlayerRotation,
     }
 }

@@ -5,7 +5,7 @@ namespace CubeEngine.Engine
 {
     class Program
     {
-        static void Main()
+        static async Task Main()
         {
             Console.WriteLine("Enter role: host, client, or server");
             string input = Console.ReadLine()?.Trim().ToLower();
@@ -15,15 +15,15 @@ namespace CubeEngine.Engine
             switch (input)
             {
                 case "host":
-                    game.StartNetworkingAsync(NetworkRole.Host);
+                    await game.StartNetworkingAsync(NetworkRole.Host);
                     game.Run();
                     break;
                 case "client":
-                    game.StartNetworkingAsync(NetworkRole.Client);
+                    await game.StartNetworkingAsync(NetworkRole.Client);
                     game.Run();
                     break;
                 case "server":
-                    game.StartNetworkingAsync(NetworkRole.Server);
+                    await game.StartNetworkingAsync(NetworkRole.Server);
                     Console.WriteLine("Server running. Press Enter to exit.");
                     Console.ReadLine();
                     break;
