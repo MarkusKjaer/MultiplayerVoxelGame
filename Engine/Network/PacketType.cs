@@ -5,7 +5,7 @@
         Ping = 1,
         Connect,
         Disconnect,
-        PlayerJoined,
+        PlayerJoinConfirm,
         PlayerInput,
         PlayerState,
         ChunkInfo,

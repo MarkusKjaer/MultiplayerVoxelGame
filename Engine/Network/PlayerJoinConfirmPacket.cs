@@ -2,12 +2,12 @@
 
 namespace CubeEngine.Engine.Network
 {
-    public class PlayerJoinedPacket : Packet
+    public class PlayerJoinConfirmPacket : Packet
     {
         public int PlayerId { get; set; }
         public string PlayerName { get; set; } = string.Empty;
 
-        public PlayerJoinedPacket(byte[] buffer) : base(PacketType.PlayerJoined)
+        public PlayerJoinConfirmPacket(byte[] buffer) : base(PacketType.PlayerJoinConfirm)
         {
             int index = 2; 
 
@@ -20,7 +20,7 @@ namespace CubeEngine.Engine.Network
             PlayerName = Encoding.UTF8.GetString(buffer, index, nameLength);
         }
 
-        public PlayerJoinedPacket(int playerId, string playerName) : base(PacketType.PlayerJoined)
+        public PlayerJoinConfirmPacket(int playerId, string playerName) : base(PacketType.PlayerJoinConfirm)
         {
             PlayerId = playerId;
             PlayerName = playerName;

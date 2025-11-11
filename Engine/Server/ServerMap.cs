@@ -44,7 +44,7 @@ namespace CubeEngine.Engine.Server
                 CurrentChunks.Add(newChunks[i].Position / ChunkSize, new ServerChunk(newChunks[i]));
             }
 
-            GameServer.Instance.OnClientMessage += OnClientMessage;
+            GameServer.Instance.ClientMessage += OnClientMessage;
         }
 
         private void OnClientMessage(IPEndPoint sender, Packet packet)

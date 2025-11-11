@@ -1,4 +1,5 @@
 ﻿using CubeEngine.Engine.Network;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -9,7 +10,7 @@ namespace CubeEngine.Engine.Server
     {
         public static GameServer? Instance { get; private set; }
 
-        public event Action<IPEndPoint, Packet>? OnClientMessage;
+        public event Action<IPEndPoint, Packet>? ClientMessage;
 
         private readonly UdpClient _udpServer;
         private TcpListener? _tcpListener;
@@ -17,7 +18,7 @@ namespace CubeEngine.Engine.Server
         public readonly Dictionary<IPEndPoint, ClientInstance> ClientsByEndpoint = new();
         private bool _running;
 
-        public const int _targetTick = 20;
+        public const int _targetTick = 60;
         public const float ServerDeltaTime = 1f / _targetTick;
 
         public TaskCompletionSource<bool> ReadyTcs { get; } = new();
@@ -35,6 +36,20 @@ namespace CubeEngine.Engine.Server
             Instance = this;
 
             ServerMap = new(32, 64, 1);
+
+            ClientMessage += OnClientMessage;
+        }
+
+        private void OnClientMessage(IPEndPoint client, Packet packet)
+        {
+            switch (packet)
+            {
+                case ConnectPacket connect:
+                    ClientsByEndpoint[client].Username = connect.PlayerName;
+                    PlayerJoinConfirmPacket playerJoinConfirmPacket = new(ClientsByEndpoint[client].Id, connect.PlayerName);
+                    _ = SendTcpPacket(ClientsByEndpoint[client].TcpClient, playerJoinConfirmPacket);
+                    break;
+            }
         }
 
         public async Task StartAsync()
@@ -49,7 +64,7 @@ namespace CubeEngine.Engine.Server
             ReadyTcs.TrySetResult(true);
 
             // Start background loops
-            _ = TcpTickLoop();
+            _ = TickLoop();
             _ = ReceiveUdpLoop();
             _ = AcceptTcpClientsLoop();
         }
@@ -75,7 +90,7 @@ namespace CubeEngine.Engine.Server
                     byte[] buffer = result.Buffer;
 
                     Packet packet = Packet.Deserialize(buffer);
-                    OnClientMessage?.Invoke(result.RemoteEndPoint, packet);
+                    ClientMessage?.Invoke(result.RemoteEndPoint, packet);
                 }
                 catch (ObjectDisposedException) { break; }
                 catch (Exception ex) { Console.WriteLine($"UDP Server error: {ex.Message}"); }
@@ -102,6 +117,8 @@ namespace CubeEngine.Engine.Server
                 {
                     TcpClient tcpClient = await _tcpListener!.AcceptTcpClientAsync();
                     var clientInstance = new ClientInstance(tcpClient);
+
+                    clientInstance.Setup(new(80, 40, 80));
 
                     ClientInstances[tcpClient] = clientInstance;
 
@@ -141,7 +158,7 @@ namespace CubeEngine.Engine.Server
                     }
 
                     Packet packet = Packet.Deserialize(packetBuffer);
-                    OnClientMessage?.Invoke((IPEndPoint)client.Client.RemoteEndPoint!, packet);
+                    ClientMessage?.Invoke((IPEndPoint)client.Client.RemoteEndPoint!, packet);
                 }
             }
             catch (Exception ex)
@@ -178,7 +195,7 @@ namespace CubeEngine.Engine.Server
 
         #region UDP Tick Sender
 
-        private async Task TcpTickLoop()
+        private async Task TickLoop()
         {
             int delay = 1000 / _targetTick;
 
@@ -186,6 +203,7 @@ namespace CubeEngine.Engine.Server
             {
                 try
                 {
+                    TickUpdate();
                     SendPlayerInfoTick();
                 }
                 catch (Exception ex)
@@ -203,9 +221,17 @@ namespace CubeEngine.Engine.Server
             {
                 foreach (var clientInfoToSend in ClientInstances)
                 {
-                    PlayerStatePacket playerStatePacket = new(clientInfoToSend.Value.Id, clientInfoToSend.Value.Position, clientInfoToSend.Value.Orientation);
+                    PlayerStatePacket playerStatePacket = new(clientInfoToSend.Value.Id, clientInfoToSend.Value.Position, clientInfoToSend.Value.Orientation, clientInfoToSend.Value.Head.Orientation);
                     _ = SendTcpPacket(client.Value.TcpClient, playerStatePacket);
                 }
+            }
+        }
+
+        private void TickUpdate()
+        {
+            foreach (var client in ClientInstances.Values)
+            {
+                client.Update();
             }
         }
 

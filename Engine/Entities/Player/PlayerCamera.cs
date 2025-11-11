@@ -41,10 +41,24 @@ namespace CubeEngine.Engine.Entities.Player
 
             this.Rotate(0, yoffset);
 
-            var rotationPacket = new PlayerRotationPacket(clientId, xRotation, yRotation);
+            var rotationPacket = new PlayerRotationPacket(xoffset, yoffset);
 
+            _ = GameClient.Instance.SendTcpMessage(rotationPacket);
+
+            GameClient.Instance.ServerMessage += OnServerMessage;
         }
 
+        private void OnServerMessage(Packet packet)
+        {
+            switch (packet)
+            {
+                case PlayerStatePacket playerStatePacket:
+                    Orientation = playerStatePacket.HeadOrientation;
+                    break;
+                default:
+                    break;
+            }
+        }
 
     }
 }

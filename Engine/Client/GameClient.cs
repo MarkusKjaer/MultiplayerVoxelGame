@@ -18,6 +18,7 @@ namespace CubeEngine.Engine.Client
         public TaskCompletionSource<bool> ReadyTcs { get; } = new();
 
         public int ClientId { get; private set; }
+        public string Name { get; private set; }
 
         public GameClient(string address, int tcpPort, int udpPort)
         {
@@ -37,6 +38,9 @@ namespace CubeEngine.Engine.Client
         {
             _running = true;
             Console.WriteLine("Client is starting...");
+
+            var connectPacket = new ConnectPacket("TestName");
+            await SendTcpMessage(connectPacket);
 
             ReadyTcs.SetResult(true);
 
@@ -143,12 +147,18 @@ namespace CubeEngine.Engine.Client
         {
             switch (packet)
             {
-                case PlayerJoinedPacket playerJoinedPacket:
-
+                case PlayerJoinConfirmPacket playerJoinConfirmPacket:
+                    HandlePacket(playerJoinConfirmPacket);
                     break;
                 default:
                     break;
             }
+        }
+
+        private void HandlePacket(PlayerJoinConfirmPacket playerJoinConfirmPacket)
+        {
+            ClientId = playerJoinConfirmPacket.PlayerId;
+            Name = playerJoinConfirmPacket.PlayerName;
         }
     }
 }

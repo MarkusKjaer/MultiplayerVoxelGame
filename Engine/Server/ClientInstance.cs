@@ -1,45 +1,69 @@
-﻿using CubeEngine.Engine.Client.Graphics.Window;
-using CubeEngine.Engine.Client.World;
+﻿using CubeEngine.Engine.Entities;
 using CubeEngine.Engine.Network;
 using OpenTK.Mathematics;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using static System.Formats.Asn1.AsnWriter;
+using System.Threading;
 
 namespace CubeEngine.Engine.Server
 {
     public class ClientInstance
     {
+        private Vector3 _postion;
+        public Vector3 Position => _postion;
+
+        private Quaternion _orientation = Quaternion.Identity;
+        public Quaternion Orientation
+        {
+            get => _orientation;
+            set
+            {
+                if (float.IsNaN(value.X) || float.IsNaN(value.Y) ||
+                    float.IsNaN(value.Z) || float.IsNaN(value.W))
+                {
+                    _orientation = Quaternion.Identity;
+                }
+                else
+                {
+                    _orientation = value;
+                }
+            }
+        }
+
+        public ClientHead Head { get; private set; }
+
+        private MovementController _movement;
+
         private static int _nextClientId = 0;
         public ushort Id { get; }
         public TcpClient TcpClient { get; }
         public IPEndPoint EndPoint { get; }
         public DateTime ConnectedAt { get; } = DateTime.Now;
 
-        public string Username { get; set; } = "Unknown"; 
-
-        public Vector3 Position { get; set; }
-        public Quaternion Orientation { get; set; }
-
-        private float _moveSpeed = 0.05f;
-        private float _gravity = -0.01f;
-        private float _jumpForce = 0.25f;
-        private float _verticalVelocity = 0f;
-        private bool _isGrounded = true;
+        public string Username { get; set; } = "Unknown";
 
         public ClientInstance(TcpClient client)
         {
             Id = (ushort)Interlocked.Increment(ref _nextClientId);
 
+            Head = new();
+
             TcpClient = client;
             EndPoint = (IPEndPoint)client.Client.RemoteEndPoint!;
 
-            Setup();
+            _movement = new MovementController(
+                moveSpeed: 2f,
+                gravity: -9.81f,
+                jumpForce: 5f
+            );
+
+            GameServer.Instance.ClientMessage += OnClientMessage;
         }
 
-        private void Setup()
+        public void Setup(Vector3 startPostion)
         {
-            GameServer.Instance.OnClientMessage += OnClientMessage;
+            _postion = startPostion;
         }
 
         private void OnClientMessage(IPEndPoint client, Packet packet)
@@ -52,20 +76,27 @@ namespace CubeEngine.Engine.Server
                 case PlayerInputPacket inp:
                     DoPlayerInput(inp.Inputs);
                     break;
+                case PlayerRotationPacket rotationPacket:
+                    Rotate(rotationPacket.RotateX, 0);
+                    Head.Rotate(0, rotationPacket.RotateY);
+                    break;
             }
         }
 
-        public override string ToString()
+        public void Update()
         {
-            return $"{Id} | {EndPoint}";
+            _movement.ApplyGravity(
+                ref _postion,
+                GameServer.ServerDeltaTime,
+                GetGroundHeight
+            );
         }
 
-        private void DoPlayerInput(List<PlayerInput> playerInputs)
+        private void DoPlayerInput(List<PlayerInput> inputs)
         {
             Vector3 moveDir = Vector3.Zero;
 
-            // Build movement vector from inputs
-            foreach (var input in playerInputs)
+            foreach (var input in inputs)
             {
                 switch (input)
                 {
@@ -73,79 +104,23 @@ namespace CubeEngine.Engine.Server
                     case PlayerInput.MoveBackward: moveDir -= FlatFront; break;
                     case PlayerInput.MoveLeft: moveDir -= FlatRight; break;
                     case PlayerInput.MoveRight: moveDir += FlatRight; break;
-                    case PlayerInput.Jump:
-                        if (_isGrounded)
-                        {
-                            _verticalVelocity = _jumpForce;
-                            _isGrounded = false;
-                        }
-                        break;
+                    case PlayerInput.Jump: _movement.Jump(); break;
                 }
             }
 
-            if (moveDir != Vector3.Zero)
-            {
-                moveDir = Vector3.Normalize(moveDir);
-                Move(moveDir, _moveSpeed * GameServer.ServerDeltaTime);
-            }
+            _movement.HandleMovement(
+                ref _postion,
+                moveDir,
+                GameServer.ServerDeltaTime,
+                GetGroundHeight
+            );
 
-            ApplyGravity();
         }
-
-        private void ApplyGravity()
-        {
-            float groundY = GetGroundHeight(Position);
-
-            if (!_isGrounded)
-                _verticalVelocity += _gravity;
-
-            _verticalVelocity += _gravity;
-            Position += new Vector3(0, _verticalVelocity, 0);
-
-
-            if (Position.Y <= groundY)
-            {
-                Position = new Vector3(Position.X, groundY, Position.Z);
-                _verticalVelocity = 0f;
-                _isGrounded = true;
-            }
-            else
-            {
-                _isGrounded = false;
-            }
-        }
-
-        private void Move(Vector3 direction, float amount)
-        {
-            Vector3 newPos = Position + direction * amount;
-            float currentHeight = Position.Y;
-            float targetHeight = GetGroundHeight(newPos);
-            float heightDiff = targetHeight - currentHeight;
-
-            if (heightDiff > 0)
-            {
-                Vector3 slideX = new Vector3(newPos.X, Position.Y, Position.Z);
-                Vector3 slideZ = new Vector3(Position.X, Position.Y, newPos.Z);
-
-                bool canSlideX = GetGroundHeight(slideX) - currentHeight <= 0;
-                bool canSlideZ = GetGroundHeight(slideZ) - currentHeight <= 0;
-
-                if (canSlideX && !canSlideZ) Position = slideX;
-                else if (!canSlideX && canSlideZ) Position = slideZ;
-                else if (canSlideX && canSlideZ)
-                    Position = MathF.Abs(direction.X) > MathF.Abs(direction.Z) ? slideX : slideZ;
-
-                return;
-            }
-
-            Position = newPos;
-        }
-
         private Vector3 FlatFront
         {
             get
             {
-                var f = Vector3.Transform(-Vector3.UnitZ, Orientation); 
+                var f = Vector3.Transform(-Vector3.UnitZ, Orientation);
                 f.Y = 0;
                 return f.LengthSquared > 0 ? Vector3.Normalize(f) : Vector3.UnitZ;
             }
@@ -177,8 +152,17 @@ namespace CubeEngine.Engine.Server
                 var data = chunk.Value.ChunkData;
                 Vector2 chunkOrigin = data.Position;
 
-                int cx = (int)(wx - chunkOrigin.X);
-                int cz = (int)(wz - chunkOrigin.Y);
+                const int CHUNK_SIZE = 32;
+
+                int chunkX = (int)chunkOrigin.X / CHUNK_SIZE;
+                int chunkZ = (int)chunkOrigin.Y / CHUNK_SIZE;
+
+                int chunkWorldX = chunkX * CHUNK_SIZE;
+                int chunkWorldZ = chunkZ * CHUNK_SIZE;
+
+                int cx = wx - chunkWorldX;
+                int cz = wz - chunkWorldZ;
+
 
                 if (cx < 0 || cz < 0 ||
                     cx >= data.Voxels.GetLength(0) ||
@@ -187,7 +171,7 @@ namespace CubeEngine.Engine.Server
 
                 for (int y = data.Voxels.GetLength(1) - 1; y >= 0; y--)
                 {
-                    if (data.Voxels[cx, y, cz].VoxelType != CubeEngine.Engine.Client.World.Enum.VoxelType.Empty)
+                    if (data.Voxels[cx, y, cz].VoxelType != Client.World.Enum.VoxelType.Empty)
                     {
                         float worldY = y + 1;
                         if (worldY > highestSolid)
@@ -198,7 +182,23 @@ namespace CubeEngine.Engine.Server
                 }
             }
 
+            if (highestSolid < 20)
+                Debug.WriteLine("ge");
+
             return highestSolid;
         }
+
+        private void Rotate(float yawDegrees, float pitchDegrees)
+        {
+            float yaw = MathHelper.DegreesToRadians(yawDegrees);
+            float pitch = MathHelper.DegreesToRadians(pitchDegrees);
+
+            var yawRotation = Quaternion.FromAxisAngle(Vector3.UnitY, yaw);
+            var pitchRotation = Quaternion.FromAxisAngle(Right, pitch);
+
+            Orientation = yawRotation * pitchRotation * Orientation;
+        }
+
+        private Vector3 Right => Vector3.Transform(Vector3.UnitX, Orientation);
     }
 }

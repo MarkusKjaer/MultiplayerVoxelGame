@@ -116,15 +116,12 @@ namespace CubeEngine.Engine.Entities
 
         public void Rotate(float yawDegrees, float pitchDegrees)
         {
-            // Convert to radians
             float yaw = MathHelper.DegreesToRadians(yawDegrees);
             float pitch = MathHelper.DegreesToRadians(pitchDegrees);
 
-            // Create quaternions for yaw and pitch
             var yawRotation = Quaternion.FromAxisAngle(Vector3.UnitY, yaw);
             var pitchRotation = Quaternion.FromAxisAngle(Right, pitch);
 
-            // Apply rotations: yaw first, then pitch
             Orientation = yawRotation * pitchRotation * Orientation;
         }
 

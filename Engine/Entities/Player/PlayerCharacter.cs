@@ -9,16 +9,17 @@ namespace CubeEngine.Engine.Entities.Player
 {
     public class PlayerCharacter : GameObject
     {
-        private float _moveSpeed = 0.05f;
-
-        private float _gravity = -0.01f;
-        private float _jumpForce = 0.25f;
-        private float _verticalVelocity = 0f;
-        private bool _isGrounded = true;
+        private MovementController _movement;
 
         public PlayerCharacter(Vector3 position)
         {
             Position = position;
+
+            _movement = new MovementController(
+                moveSpeed: 2f,
+                gravity: -9.81f,
+                jumpForce: 5f
+            );
 
             GameClient.Instance.ServerMessage += OnServerMessage;
 
@@ -43,7 +44,8 @@ namespace CubeEngine.Engine.Entities.Player
             switch (packet)
             {
                 case PlayerStatePacket playerStatePacket:
-                    Console.WriteLine(playerStatePacket.Position);
+                    Position = playerStatePacket.Position;
+                    Orientation = playerStatePacket.Orientation;
                     break;
                 default:
                     break;
@@ -55,57 +57,50 @@ namespace CubeEngine.Engine.Entities.Player
             if (!CubeGameWindow.Instance.IsFocused)
                 return;
 
-            UpdateMovement();
-            ApplyGravity();
+            HandleInput();
+
+            Vector3 postion = Position;
+            _movement.ApplyGravity(ref postion, (float)Time.DeltaTime, GetGroundHeight);
+            Position = postion;
         }
 
-        private void UpdateMovement()
+        private void HandleInput()
         {
             KeyboardState input = CubeGameWindow.Instance.KeyboardState;
             Vector3 moveDir = Vector3.Zero;
 
+            // Movement
             if (input.IsKeyDown(Keys.W)) moveDir += FlatFront;
             if (input.IsKeyDown(Keys.S)) moveDir -= FlatFront;
             if (input.IsKeyDown(Keys.A)) moveDir -= FlatRight;
             if (input.IsKeyDown(Keys.D)) moveDir += FlatRight;
 
-            if (moveDir != Vector3.Zero)
-            {
-                moveDir = Vector3.Normalize(moveDir);
-                Move(moveDir, _moveSpeed * (float)Time.DeltaTime);
-            }
+            Vector3 position = Position;
+            _movement.HandleMovement(
+                ref position,
+                moveDir,
+                (float)Time.DeltaTime,
+                GetGroundHeight
+            );
+            Position = position;
 
-            if (input.IsKeyDown(Keys.Space) && _isGrounded)
-            {
-                _verticalVelocity = _jumpForce;
-                _isGrounded = false;
-            }
+            if (input.IsKeyDown(Keys.Space))
+                _movement.Jump();
 
-            PlayerInputPacket playerInputPacket = new();
+            List<PlayerInput> inputs = new();
 
-            GameClient.Instance.SendTcpMessage()
-        }
+            if (input.IsKeyDown(Keys.W)) inputs.Add(PlayerInput.MoveForward);
+            if (input.IsKeyDown(Keys.S)) inputs.Add(PlayerInput.MoveBackward);
+            if (input.IsKeyDown(Keys.A)) inputs.Add(PlayerInput.MoveLeft);
+            if (input.IsKeyDown(Keys.D)) inputs.Add(PlayerInput.MoveRight);
+            if (input.IsKeyDown(Keys.Space)) inputs.Add(PlayerInput.Jump);
 
+            PlayerInputPacket playerInputPacket = new(
+                (ushort)GameClient.Instance.ClientId,
+                inputs
+            );
 
-        private void ApplyGravity()
-        {
-            float groundY = GetGroundHeight(Position);
-
-            if (!_isGrounded)
-                _verticalVelocity += _gravity * (float)Time.DeltaTime;
-
-            Position += new Vector3(0, _verticalVelocity * (float)Time.DeltaTime, 0);
-
-            if (Position.Y <= groundY)
-            {
-                Position = new Vector3(Position.X, groundY, Position.Z);
-                _verticalVelocity = 0f;
-                _isGrounded = true;
-            }
-            else
-            {
-                _isGrounded = false;
-            }
+            _ = GameClient.Instance.SendTcpMessage(playerInputPacket);
         }
 
         private float GetGroundHeight(Vector3 position)
@@ -167,48 +162,5 @@ namespace CubeEngine.Engine.Entities.Player
                 return Vector3.Normalize(r);
             }
         }
-
-        public void Move(Vector3 direction, float amount)
-        {
-            Vector3 newPos = Position + direction * amount;
-
-            float currentHeight = Position.Y;
-            float targetHeight = GetGroundHeight(newPos);
-
-            float heightDiff = targetHeight - currentHeight;
-
-            if (heightDiff > 0)
-            {
-                Vector3 slideX = new Vector3(newPos.X, Position.Y, Position.Z);
-                float slideXHeight = GetGroundHeight(slideX);
-                float slideXDiff = slideXHeight - currentHeight;
-
-                bool canSlideX = slideXDiff <= 0;
-
-                Vector3 slideZ = new Vector3(Position.X, Position.Y, newPos.Z);
-                float slideZHeight = GetGroundHeight(slideZ);
-                float slideZDiff = slideZHeight - currentHeight;
-
-                bool canSlideZ = slideZDiff <= 0;
-
-                if (canSlideX && !canSlideZ)
-                    Position = slideX;
-                else if (!canSlideX && canSlideZ)
-                    Position = slideZ;
-                else if (canSlideX && canSlideZ)
-                {
-                    float xMove = MathF.Abs(direction.X);
-                    float zMove = MathF.Abs(direction.Z);
-
-                    Position = (xMove > zMove) ? slideX : slideZ;
-                }
-
-                return;
-            }
-
-            Position = newPos;
-        }
-
-
     }
 }

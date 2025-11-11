@@ -36,7 +36,7 @@ namespace CubeEngine.Engine
             if (role == NetworkRole.Client || role == NetworkRole.Host)
             {
                 Client = new GameClient("localhost", 8000, 9000);
-                Client.Start();
+                Client.StartAsync();
             }
         }
 
@@ -64,9 +64,6 @@ namespace CubeEngine.Engine
             string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
             string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
 
-            //Noise.LoadHeightmap(Path.Combine(parentDirectory, "Util", "NoiseImage", "perlin.png"));
-
-
             MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
 
             TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
@@ -74,16 +71,6 @@ namespace CubeEngine.Engine
 
             TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
             Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
-
-            //VisualGameObject playerModel = new()
-            //{
-            //    Mesh = new(meshInfo, material),
-            //    Parent = player,
-            //    Orientation = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(180f)),
-            //    Position = new(0, 1, 0)
-            //};
-
-            //playerModel.Instantiate();
 
             gameWindow.Run();
         }
