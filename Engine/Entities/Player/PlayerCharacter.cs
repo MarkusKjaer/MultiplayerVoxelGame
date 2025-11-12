@@ -44,6 +44,9 @@ namespace CubeEngine.Engine.Entities.Player
             switch (packet)
             {
                 case PlayerStatePacket playerStatePacket:
+                    if (playerStatePacket.ClientId != GameClient.Instance.ClientId)
+                        return;
+
                     Position = playerStatePacket.Position;
                     Orientation = playerStatePacket.Orientation;
                     break;

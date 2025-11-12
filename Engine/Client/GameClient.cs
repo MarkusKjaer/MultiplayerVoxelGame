@@ -17,7 +17,7 @@ namespace CubeEngine.Engine.Client
 
         public TaskCompletionSource<bool> ReadyTcs { get; } = new();
 
-        public int ClientId { get; private set; }
+        public int ClientId { get; private set; } = -1;
         public string Name { get; private set; }
 
         public GameClient(string address, int tcpPort, int udpPort)
@@ -157,8 +157,13 @@ namespace CubeEngine.Engine.Client
 
         private void HandlePacket(PlayerJoinConfirmPacket playerJoinConfirmPacket)
         {
-            ClientId = playerJoinConfirmPacket.PlayerId;
-            Name = playerJoinConfirmPacket.PlayerName;
+            if(ClientId == -1)
+            {
+                ClientId = playerJoinConfirmPacket.PlayerId;
+
+
+                Name = playerJoinConfirmPacket.PlayerName;
+            }
         }
     }
 }

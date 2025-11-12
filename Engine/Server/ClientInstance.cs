@@ -47,6 +47,7 @@ namespace CubeEngine.Engine.Server
         {
             Id = (ushort)Interlocked.Increment(ref _nextClientId);
 
+
             Head = new();
 
             TcpClient = client;

@@ -53,6 +53,9 @@ namespace CubeEngine.Engine.Entities.Player
             switch (packet)
             {
                 case PlayerStatePacket playerStatePacket:
+                    if (playerStatePacket.ClientId != GameClient.Instance.ClientId)
+                        return;
+
                     Orientation = playerStatePacket.HeadOrientation;
                     break;
                 default:

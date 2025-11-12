@@ -1,15 +1,16 @@
-﻿using System.Threading.Tasks;
-using System.Xml.Linq;
-using CubeEngine.Engine.Client;
+﻿using CubeEngine.Engine.Client;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
+using CubeEngine.Engine.Client.PlayerRender;
 using CubeEngine.Engine.Entities;
 using CubeEngine.Engine.Entities.Player;
 using CubeEngine.Engine.Enum;
 using CubeEngine.Engine.Server;
 using CubeEngine.Util;
 using OpenTK.Mathematics;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace CubeEngine.Engine
 {
@@ -58,19 +59,24 @@ namespace CubeEngine.Engine
             camera.Instantiate();
             CurrentGameScene.ActiveCamera = camera;
 
-            OBJFileReader oBJFileReader = new OBJFileReader();
+            //OBJFileReader oBJFileReader = new OBJFileReader();
 
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
-            string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
+            //string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
 
-            MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
+            //MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
 
             TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
             CurrentGameScene.Map = new(32, 64, 1, textureArrayManagerForMap);
 
-            TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
-            Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
+            //TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
+            //Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
+
+            PlayerRenderManager playerRenderManager = new();
+
+            playerRenderManager.Setup();
+            playerRenderManager.Instantiate();
 
             gameWindow.Run();
         }
