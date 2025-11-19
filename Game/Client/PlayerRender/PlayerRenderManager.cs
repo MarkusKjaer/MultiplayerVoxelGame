@@ -14,8 +14,8 @@ namespace CubeEngine.Engine.Client.PlayerRender
         private static readonly string ParentDirectory = Directory.GetParent(BaseDirectory).Parent.Parent.Parent.FullName;
         private static readonly string ObjFilePath = Path.Combine(ParentDirectory, "Models", "Suzanne.obj");
         private static readonly string TexturePath = Path.Combine(ParentDirectory, "Models", "ondskab.png");
-        private static readonly string VertexShaderPath = Path.Combine(ParentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert");
-        private static readonly string FragmentShaderPath = Path.Combine(ParentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag");
+        private static readonly string VertexShaderPath = Path.Combine(ParentDirectory, "Game", "Client", "Graphics", "Window", "Shaders", "Cube.vert");
+        private static readonly string FragmentShaderPath = Path.Combine(ParentDirectory, "Game", "Client", "Graphics", "Window", "Shaders", "Cube.frag");
 
         private OBJFileReader _objFileReader;
         private MeshInfo _meshInfo;

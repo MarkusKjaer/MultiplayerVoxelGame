@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Engine\Server\World\**" />
-    <EmbeddedResource Remove="Engine\Server\World\**" />
-    <None Remove="Engine\Server\World\**" />
+    <Compile Remove="Game\Server\World\**" />
+    <EmbeddedResource Remove="Game\Server\World\**" />
+    <None Remove="Game\Server\World\**" />
   </ItemGroup>
 
   <ItemGroup>
