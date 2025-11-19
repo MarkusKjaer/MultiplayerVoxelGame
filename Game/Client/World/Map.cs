@@ -20,7 +20,7 @@ namespace CubeEngine.Engine.Client.World
         {
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
-            string shadersPath = Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "MapShaders");
+            string shadersPath = Path.Combine(parentDirectory, "Game", "Client", "Graphics", "Window", "Shaders", "MapShaders");
 
             string vertShaderPath = Path.Combine(shadersPath, "MapChunk.vert");
             string fragShaderPath = Path.Combine(shadersPath, "MapChunk.frag");
