@@ -1,5 +1,7 @@
 ﻿using CubeEngine.Engine.Enum;
+using MultiplayerVoxelGame.Game;
 using System;
+using System.Threading.Tasks;
 
 namespace CubeEngine.Engine
 {
@@ -7,29 +9,29 @@ namespace CubeEngine.Engine
     {
         static async Task Main()
         {
-            Console.WriteLine("Enter role: host, client, or server");
-            string input = Console.ReadLine()?.Trim().ToLower();
+            string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+            GameConfig config = GameConfig.Load(configPath);
+
+            NetworkRole role = config.Role.ToLower() switch
+            {
+                "host" => NetworkRole.Host,
+                "client" => NetworkRole.Client,
+                "server" => NetworkRole.Server,
+                _ => throw new Exception("Invalid role in config file.")
+            };
 
             Game game = new();
 
-            switch (input)
+            await game.StartNetworkingAsync(role, config.ServerIp, config.TcpPort, config.UdpPort);
+
+            if (role == NetworkRole.Server)
             {
-                case "host":
-                    await game.StartNetworkingAsync(NetworkRole.Host);
-                    game.Run();
-                    break;
-                case "client":
-                    await game.StartNetworkingAsync(NetworkRole.Client);
-                    game.Run();
-                    break;
-                case "server":
-                    await game.StartNetworkingAsync(NetworkRole.Server);
-                    Console.WriteLine("Server running. Press Enter to exit.");
-                    Console.ReadLine();
-                    break;
-                default:
-                    Console.WriteLine("Invalid role. Please enter 'host', 'client', or 'server'.");
-                    break;
+                Console.WriteLine("Server running. Press Enter to exit.");
+                Console.ReadLine();
+            }
+            else
+            {
+                game.Run();
             }
         }
     }

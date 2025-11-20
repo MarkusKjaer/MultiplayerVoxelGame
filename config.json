@@ -1,0 +1,6 @@
+{
+  "role": "client",
+  "serverIp": "localhost",
+  "tcpPort": 8000,
+  "udpPort": 9000
+}
