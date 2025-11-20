@@ -127,6 +127,7 @@ namespace CubeEngine.Engine.Client
                         Console.Error.WriteLine($"Failed to deserialize TCP packet: {e}");
                 }
             }
+            Console.WriteLine("Stopped client");
         }
 
         public async Task SendTcpMessage(Packet packet)

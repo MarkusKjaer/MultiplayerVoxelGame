@@ -64,7 +64,7 @@ namespace CubeEngine.Engine.Network
         MoveLeft,
         MoveRight,
         Jump,
-        Mine,
-        Place,
+        BreakBlock,
+        PlaceBlock
     }
 }

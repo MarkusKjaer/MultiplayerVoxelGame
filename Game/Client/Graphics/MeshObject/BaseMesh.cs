@@ -10,12 +10,10 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
     {
         private bool disposed;
 
-        // Will be set in child classes
         protected VertexBuffer vertexBuffer = default!;
         protected IndexBuffer indexBuffer = default!;
         protected VertexArray vertexArray = default!;
         protected ShaderProgram shaderProgram = default!;
-
         protected int textureID;
 
         protected T _meshInfo;
@@ -40,30 +38,28 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
             indexBuffer?.Dispose();
             vertexBuffer?.Dispose();
             shaderProgram?.Dispose();
-            GL.BindTexture(TextureTarget.Texture2DArray, textureID);
-            GL.DeleteTexture(textureID);
-            GL.BindTexture(TextureTarget.Texture2DArray, 0);
+
+            if (textureID != 0)
+            {
+                GL.DeleteTexture(textureID);
+                textureID = 0;
+            }
         }
 
         public virtual void Update(Camera camera, int windowWidth, int windowheight)
         {
             Matrix4 view = camera.GetCurrentView();
-            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90.0f), windowWidth / (float)windowheight, 0.1f, 100.0f);
-            
+            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(
+                MathHelper.DegreesToRadians(90.0f),
+                windowWidth / (float)windowheight,
+                0.1f, 100.0f
+            );
+
             shaderProgram.SetUnitform("model", Model);
             shaderProgram.SetUnitform("view", view);
             shaderProgram.SetUnitform("projection", projection);
 
-            Vector3 originalLight = new Vector3(1000, 500, 2000);
-
-            Vector4 transformed = new Vector4(originalLight, 1.0f);
-
-            Vector4 result = Model * transformed;
-
-            Vector3 rotatedLight = new Vector3(result.X, result.Y, result.Z);
-
             shaderProgram.SetUnitform("lightPos", new Vector3(1000, 500, 2000));
-
             shaderProgram.SetUnitform("lightColor", 1.0f, 1.0f, 1.0f);
             shaderProgram.SetUnitform("ambient", 0.1f, 0.1f, 0.1f);
             shaderProgram.SetUnitform("objectColor", 1.0f, 1.0f, 1.0f);
@@ -81,21 +77,23 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
 
         public void Dispose()
         {
-            if (!disposed)
-            {
+            if (disposed)
                 return;
-            }
 
             vertexArray?.Dispose();
             indexBuffer?.Dispose();
             vertexBuffer?.Dispose();
             shaderProgram?.Dispose();
-            GL.BindTexture(TextureTarget.Texture2DArray, textureID);
-            GL.DeleteTexture(textureID);
-            GL.BindTexture(TextureTarget.Texture2DArray, 0);
+
+            if (textureID != 0)
+            {
+                GL.DeleteTexture(textureID);
+                textureID = 0;
+            }
 
             disposed = true;
             GC.SuppressFinalize(this);
         }
     }
+
 }

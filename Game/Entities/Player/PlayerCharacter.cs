@@ -67,6 +67,8 @@ namespace CubeEngine.Engine.Entities.Player
         private void HandleInput()
         {
             KeyboardState input = CubeGameWindow.Instance.KeyboardState;
+            MouseState mouse = CubeGameWindow.Instance.MouseState;
+
             Vector3 moveDir = Vector3.Zero;
 
             if (input.IsKeyDown(Keys.W)) moveDir += FlatFront;
@@ -94,6 +96,8 @@ namespace CubeEngine.Engine.Entities.Player
             if (input.IsKeyDown(Keys.A)) inputs.Add(PlayerInput.MoveLeft);
             if (input.IsKeyDown(Keys.D)) inputs.Add(PlayerInput.MoveRight);
             if (input.IsKeyDown(Keys.Space)) inputs.Add(PlayerInput.Jump);
+            if (mouse.IsButtonDown(MouseButton.Left)) inputs.Add(PlayerInput.BreakBlock);
+            if (mouse.IsButtonDown(MouseButton.Right)) inputs.Add(PlayerInput.PlaceBlock);
 
             _ = GameClient.Instance.SendTcpMessage(
                 new PlayerInputPacket((ushort)GameClient.Instance.ClientId, inputs)

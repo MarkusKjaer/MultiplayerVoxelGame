@@ -50,7 +50,7 @@ namespace CubeEngine.Engine
             gameWindow.VSync = OpenTK.Windowing.Common.VSyncMode.On;
                 
             PlayerCharacter player = new(new(80, 0, 80));
-            PlayerCamera camera = new(new Vector3(0, 2, 0), player)
+            PlayerCamera camera = new(new Vector3(0, 1.6f, 0), player)
             {
                 Parent = player
             };

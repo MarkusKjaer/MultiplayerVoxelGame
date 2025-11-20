@@ -1,7 +1,6 @@
 ﻿using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window;
 using OpenTK.Mathematics;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace CubeEngine.Engine.Entities
 {

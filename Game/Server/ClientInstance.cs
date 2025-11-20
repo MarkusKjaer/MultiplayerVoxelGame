@@ -1,4 +1,5 @@
-﻿using CubeEngine.Engine.Entities;
+﻿using CubeEngine.Engine.Client.World.Enum;
+using CubeEngine.Engine.Entities;
 using CubeEngine.Engine.Network;
 using CubeEngine.Engine.Util;
 using OpenTK.Mathematics;
@@ -16,6 +17,12 @@ namespace CubeEngine.Engine.Server
         private const float PLAYER_HEIGHT = 1.8f;
 
         Vector3 _moveDir = Vector3.Zero;
+
+        private DateTime _lastBlockPlaced = DateTime.MinValue;
+        private readonly TimeSpan _blockPlaceDelay = TimeSpan.FromMilliseconds(500);
+
+        private DateTime _lastBlockBroken = DateTime.MinValue;
+private readonly TimeSpan _blockBreakDelay = TimeSpan.FromMilliseconds(500);
 
         public BoundingBox BoundingBox
         {
@@ -126,6 +133,8 @@ namespace CubeEngine.Engine.Server
                     case PlayerInput.MoveLeft: _moveDir -= FlatRight; break;
                     case PlayerInput.MoveRight: _moveDir += FlatRight; break;
                     case PlayerInput.Jump: _movement.Jump(ref _position); break;
+                    case PlayerInput.BreakBlock: TryBreakBlock(); break;
+                    case PlayerInput.PlaceBlock: TryPlaceBlock(); break;
                 }
             }
 
@@ -188,6 +197,90 @@ namespace CubeEngine.Engine.Server
 
             Orientation = yawRot * pitchRot * Orientation;
         }
+
+        private bool RaycastBlock(out Vector3i hit, out Vector3i place)
+        {
+            Vector3 origin = _position + new Vector3(0, 1.6f, 0);
+
+            Quaternion combinedOrientation = Orientation * Head.Orientation;
+
+            Vector3 dir = Vector3.Transform(-Vector3.UnitZ, combinedOrientation);
+            const float maxDist = 5f;
+
+            float step = 0.05f;
+            float dist = 0f;
+
+            while (dist < maxDist)
+            {
+                Vector3 sample = origin + dir * dist;
+                int x = (int)Math.Floor(sample.X);
+                int y = (int)Math.Floor(sample.Y);
+                int z = (int)Math.Floor(sample.Z);
+
+                if (IsSolid(x, y, z))
+                {
+                    hit = new Vector3i(x, y, z);
+
+                    Vector3 back = sample - dir * step;
+                    place = new Vector3i(
+                        (int)Math.Floor(back.X),
+                        (int)Math.Floor(back.Y),
+                        (int)Math.Floor(back.Z)
+                    );
+                    return true;
+                }
+
+                dist += step;
+            }
+
+            hit = default;
+            place = default;
+            return false;
+        }
+
+        private void TryBreakBlock()
+        {
+            if ((DateTime.Now - _lastBlockBroken) < _blockBreakDelay)
+                return;
+
+            if (!RaycastBlock(out Vector3i hit, out _)) return;
+
+            var map = GameServer.Instance.ServerMap;
+            if (map == null) return;
+
+            map.SetBlock(hit.X, hit.Y, hit.Z, VoxelType.Empty);
+            map.BroadcastChunkUpdate(hit);
+
+            _lastBlockBroken = DateTime.Now;
+        }
+
+
+        private void TryPlaceBlock()
+        {
+            if ((DateTime.Now - _lastBlockPlaced) < _blockPlaceDelay)
+                return;
+
+            if (!RaycastBlock(out _, out Vector3i place)) return;
+
+            BoundingBox blockBounds = new BoundingBox(
+                new Vector3(place.X, place.Y, place.Z),
+                new Vector3(place.X + 1, place.Y + 1, place.Z + 1)
+            );
+
+            if (BoundingBox.Intersects(blockBounds))
+                return; 
+
+            var map = GameServer.Instance.ServerMap;
+            if (map == null) return;
+
+            map.SetBlock(place.X, place.Y, place.Z, VoxelType.Dirt);
+            map.BroadcastChunkUpdate(place);
+
+            _lastBlockPlaced = DateTime.Now;
+        }
+
+
+
 
         private Vector3 Right => Vector3.Transform(Vector3.UnitX, Orientation);
     }
