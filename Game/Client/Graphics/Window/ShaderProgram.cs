@@ -1,4 +1,5 @@
 ﻿using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Client.Graphics.Window
 {
@@ -132,6 +133,11 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             GL.UseProgram(ShaderProgramHandle);
             GL.Uniform3(uniform.Location, v1, v2, v3);
             GL.UseProgram(0);
+        }
+
+        public void SetUnitform(string name, Vector3 vector)
+        {
+            SetUnitform(name, vector.X, vector.Y, vector.Z);    
         }
 
         public void SetUnitform(string name, OpenTK.Mathematics.Matrix4 matrix)

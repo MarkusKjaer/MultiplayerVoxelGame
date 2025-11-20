@@ -53,10 +53,20 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
             shaderProgram.SetUnitform("model", Model);
             shaderProgram.SetUnitform("view", view);
             shaderProgram.SetUnitform("projection", projection);
-            shaderProgram.SetUnitform("lightPos", 1000, 500, 2000); // Example light position
-            shaderProgram.SetUnitform("lightColor", 1.0f, 1.0f, 1.0f); // Example light color
-            shaderProgram.SetUnitform("ambient", 0.1f, 0.1f, 0.1f); // Example ambient light color
-            shaderProgram.SetUnitform("objectColor", 1.0f, 1.0f, 1.0f); // Example diffuse light color
+
+            Vector3 originalLight = new Vector3(1000, 500, 2000);
+
+            Vector4 transformed = new Vector4(originalLight, 1.0f);
+
+            Vector4 result = Model * transformed;
+
+            Vector3 rotatedLight = new Vector3(result.X, result.Y, result.Z);
+
+            shaderProgram.SetUnitform("lightPos", new Vector3(1000, 500, 2000));
+
+            shaderProgram.SetUnitform("lightColor", 1.0f, 1.0f, 1.0f);
+            shaderProgram.SetUnitform("ambient", 0.1f, 0.1f, 0.1f);
+            shaderProgram.SetUnitform("objectColor", 1.0f, 1.0f, 1.0f);
         }
 
         public virtual void Render()

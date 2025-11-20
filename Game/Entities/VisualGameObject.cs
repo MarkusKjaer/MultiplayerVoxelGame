@@ -28,6 +28,7 @@ namespace CubeEngine.Engine.Entities
             Mesh.Model = Matrix4.CreateFromQuaternion(GlobalOrientation) * Matrix4.CreateScale(GlobalScale) * Matrix4.CreateTranslation(GlobalPosition);
 
             Mesh.Update(CubeGameWindow.Instance.CurrentGameScene.ActiveCamera, CubeGameWindow.Instance.WindowWidth, CubeGameWindow.Instance.Windowheight);
+
             base.OnUpdate();
         }
 
