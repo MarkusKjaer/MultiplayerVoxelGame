@@ -59,19 +59,11 @@ namespace CubeEngine.Engine
             camera.Instantiate();
             CurrentGameScene.ActiveCamera = camera;
 
-            //OBJFileReader oBJFileReader = new OBJFileReader();
-
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
-            //string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
-
-            //MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
 
             TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
             CurrentGameScene.Map = new(32, 64, 1, textureArrayManagerForMap);
-
-            //TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
-            //Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
 
             PlayerRenderManager playerRenderManager = new();
 
