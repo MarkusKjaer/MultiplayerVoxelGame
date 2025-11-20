@@ -7,83 +7,147 @@ namespace CubeEngine.Engine.Entities
         private float _moveSpeed;
         private float _gravity;
         private float _jumpForce;
-        private float _verticalVelocity = 0f;
-        private bool _isGrounded = true;
+        private Vector3 _playerSize;
 
-        public MovementController(float moveSpeed = 0.05f, float gravity = -0.01f, float jumpForce = 0.25f)
+        private float _verticalVelocity = 0f;
+        private bool _isGrounded = false;
+
+        private const float SkinWidth = 0.05f;
+
+        public MovementController(float moveSpeed = 2f, float gravity = -9.81f, float jumpForce = 5f, Vector3? playerSize = null)
         {
             _moveSpeed = moveSpeed;
             _gravity = gravity;
             _jumpForce = jumpForce;
+            _playerSize = playerSize ?? new Vector3(0.6f, 1.8f, 0.6f);
         }
 
-        public void HandleMovement(ref Vector3 position, Vector3 moveDir, float deltaTime, Func<Vector3, float> getGroundHeight)
-        {
-            if (moveDir != Vector3.Zero)
-            {
-                moveDir = Vector3.Normalize(moveDir);
-                Move(ref position, moveDir, _moveSpeed * deltaTime, getGroundHeight);
-            }
-        }
-
-        public void Jump()
+        public void Jump(ref Vector3 pos)
         {
             if (_isGrounded)
             {
+                pos.Y += 0.05f;
                 _verticalVelocity = _jumpForce;
                 _isGrounded = false;
             }
         }
 
-        public void ApplyGravity(ref Vector3 position, float deltaTime, Func<Vector3, float> getGroundHeight)
+        public Vector3 HandleMovement(Vector3 moveDir)
         {
-            float groundY = getGroundHeight(position);
+            if (moveDir == Vector3.Zero)
+                return Vector3.Zero;
 
+            return Vector3.Normalize(moveDir) * _moveSpeed;
+        }
+
+        public Vector3 ApplyGravity(float deltaTime)
+        {
             if (!_isGrounded)
                 _verticalVelocity += _gravity * deltaTime;
 
-            position += new Vector3(0, _verticalVelocity * deltaTime, 0);
-
-            if (position.Y <= groundY)
-            {
-                position = new Vector3(position.X, groundY, position.Z);
-                _verticalVelocity = 0f;
-                _isGrounded = true;
-            }
-            else
-            {
-                _isGrounded = false;
-            }
+            return new Vector3(0, _verticalVelocity, 0);
         }
 
-        private void Move(ref Vector3 position, Vector3 direction, float amount, Func<Vector3, float> getGroundHeight)
+        public void PrePhysicsGroundCheck(ref Vector3 pos, Func<int, int, int, bool> isSolid)
         {
-            Vector3 newPos = position + direction * amount;
-            float currentHeight = position.Y;
-            float targetHeight = getGroundHeight(newPos);
-            float heightDiff = targetHeight - currentHeight;
+            _isGrounded = false;
 
-            if (heightDiff > 0)
-            {
-                Vector3 slideX = new Vector3(newPos.X, position.Y, position.Z);
-                float slideXHeight = getGroundHeight(slideX);
-                bool canSlideX = slideXHeight - currentHeight <= 0;
+            Vector3 half = new Vector3(_playerSize.X / 2f - SkinWidth, 0, _playerSize.Z / 2f - SkinWidth);
+            Vector3 checkMin = new(pos.X - half.X, pos.Y - SkinWidth, pos.Z - half.Z);
+            Vector3 checkMax = new(pos.X + half.X, pos.Y - SkinWidth, pos.Z + half.Z);
 
-                Vector3 slideZ = new Vector3(position.X, position.Y, newPos.Z);
-                float slideZHeight = getGroundHeight(slideZ);
-                bool canSlideZ = slideZHeight - currentHeight <= 0;
+            int minX = (int)MathF.Floor(checkMin.X);
+            int minY = (int)MathF.Floor(checkMin.Y);
+            int minZ = (int)MathF.Floor(checkMin.Z);
 
-                if (canSlideX && !canSlideZ)
-                    position = slideX;
-                else if (!canSlideX && canSlideZ)
-                    position = slideZ;
-                else if (canSlideX && canSlideZ)
-                    position = MathF.Abs(direction.X) > MathF.Abs(direction.Z) ? slideX : slideZ;
+            int maxX = (int)MathF.Floor(checkMax.X);
+            int maxY = (int)MathF.Floor(checkMax.Y);
+            int maxZ = (int)MathF.Floor(checkMax.Z);
 
-                return;
-            }
-
-            position = newPos;
+            for (int x = minX; x <= maxX; x++)
+                for (int y = minY; y <= maxY; y++)
+                    for (int z = minZ; z <= maxZ; z++)
+                    {
+                        if (isSolid(x, y, z))
+                        {
+                            _isGrounded = true;
+                            _verticalVelocity = 0;
+                            return;
+                        }
+                    }
         }
+
+        public void MoveWithCollision(ref Vector3 pos, Vector3 velocity, float dt, Func<int, int, int, bool> isSolid)
+        {
+            Vector3 move = velocity * dt;
+
+            MoveAxis(ref pos, new Vector3(move.X, 0, 0), 0, isSolid);
+            MoveAxis(ref pos, new Vector3(0, move.Y, 0), 1, isSolid);
+            MoveAxis(ref pos, new Vector3(0, 0, move.Z), 2, isSolid);
+
+        }
+
+        private void MoveAxis(ref Vector3 pos, Vector3 delta, int axis, Func<int, int, int, bool> isSolid)
+        {
+            float move = delta[axis];
+            if (move == 0)
+                return;
+
+            Vector3 half = new Vector3(
+                _playerSize.X / 2f - SkinWidth,
+                _playerSize.Y - SkinWidth,
+                _playerSize.Z / 2f - SkinWidth
+            );
+
+            float sign = MathF.Sign(move);
+            float remaining = MathF.Abs(move);
+
+            while (remaining > 0f)
+            {
+                float step = MathF.Min(remaining, SkinWidth);
+                pos[axis] += step * sign;
+
+                Vector3 min = new(pos.X - half.X, pos.Y, pos.Z - half.Z);
+                Vector3 max = new(pos.X + half.X, pos.Y + _playerSize.Y, pos.Z + half.Z);
+
+                int minX = (int)MathF.Floor(min.X);
+                int minY = (int)MathF.Floor(min.Y);
+                int minZ = (int)MathF.Floor(min.Z);
+
+                int maxX = (int)MathF.Floor(max.X);
+                int maxY = (int)MathF.Floor(max.Y);
+                int maxZ = (int)MathF.Floor(max.Z);
+
+                bool collided = false;
+
+                for (int x = minX; x <= maxX; x++)
+                    for (int y = minY; y <= maxY; y++)
+                        for (int z = minZ; z <= maxZ; z++)
+                        {
+                            if (isSolid(x, y, z))
+                            {
+                                collided = true;
+                                break;
+                            }
+                        }
+
+                if (collided)
+                {
+                    pos[axis] -= step * sign;
+
+                    if (axis == 1)
+                    {
+                        _verticalVelocity = 0;
+                        if (sign < 0)
+                            _isGrounded = true;
+                    }
+
+                    return;
+                }
+
+                remaining -= step;
+            }
+        }
+
     }
 }
