@@ -1,6 +1,7 @@
 ﻿using CubeEngine.Engine.Client;
 using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Network;
+using CubeEngine.Engine.Util;
 using CubeEngine.Util;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -11,6 +12,8 @@ namespace CubeEngine.Engine.Entities.Player
     {
         private MovementController _movement;
 
+        private readonly Vector3 PlayerSize = new(0.6f, 1.8f, 0.6f);
+
         public PlayerCharacter(Vector3 position)
         {
             Position = position;
@@ -18,132 +21,111 @@ namespace CubeEngine.Engine.Entities.Player
             _movement = new MovementController(
                 moveSpeed: 2f,
                 gravity: -9.81f,
-                jumpForce: 5f
+                jumpForce: 5f,
+                playerSize: PlayerSize
             );
 
             GameClient.Instance.ServerMessage += OnServerMessage;
 
-            List<Vector2> chunksToGen =
-            [
-                new(0, 0), new(1, 0), new(2, 0), new(3, 0), new(4, 0),
-                new(0, 1), new(1, 1), new(2, 1), new(3, 1), new(4, 1),
-                new(0, 2), new(1, 2), new(2, 2), new(3, 2), new(4, 2),
-                new(0, 3), new(1, 3), new(2, 3), new(3, 3), new(4, 3),
-                new(0, 4), new(1, 4), new(2, 4), new(3, 4), new(4, 4),
-            ];
-
-            foreach (var chunk in chunksToGen)
-            {
-                ChunkRequestPacket chunkRequestPacket = new(chunk);
-                _ = GameClient.Instance.SendTcpMessage(chunkRequestPacket);
-            }
+            for (int x = 0; x <= 4; x++)
+                for (int z = 0; z <= 4; z++)
+                    _ = GameClient.Instance.SendTcpMessage(new ChunkRequestPacket(new Vector2(x, z)));
         }
 
         private void OnServerMessage(Packet packet)
         {
-            switch (packet)
+            if (packet is PlayerStatePacket playerStatePacket &&
+                playerStatePacket.ClientId == GameClient.Instance.ClientId)
             {
-                case PlayerStatePacket playerStatePacket:
-                    if (playerStatePacket.ClientId != GameClient.Instance.ClientId)
-                        return;
-
-                    Position = playerStatePacket.Position;
-                    Orientation = playerStatePacket.Orientation;
-                    break;
-                default:
-                    break;
+                Position = playerStatePacket.Position;
+                Orientation = playerStatePacket.Orientation;
             }
         }
 
         public override void OnUpdate()
         {
-            if (!CubeGameWindow.Instance.IsFocused)
-                return;
+            if (!CubeGameWindow.Instance.IsFocused) return;
 
             HandleInput();
 
-            Vector3 postion = Position;
-            _movement.ApplyGravity(ref postion, (float)Time.DeltaTime, GetGroundHeight);
-            Position = postion;
+            Vector3 pos = Position;
+
+            _movement.PrePhysicsGroundCheck(ref pos, IsSolid);
+
+            Vector3 velocity = _movement.ApplyGravity((float)Time.DeltaTime);
+
+            _movement.MoveWithCollision(
+                ref pos,
+                velocity,
+                (float)Time.DeltaTime,
+                IsSolid
+            );
+
+            Position = pos;
         }
 
         private void HandleInput()
         {
             KeyboardState input = CubeGameWindow.Instance.KeyboardState;
+            MouseState mouse = CubeGameWindow.Instance.MouseState;
+
             Vector3 moveDir = Vector3.Zero;
 
-            // Movement
             if (input.IsKeyDown(Keys.W)) moveDir += FlatFront;
             if (input.IsKeyDown(Keys.S)) moveDir -= FlatFront;
             if (input.IsKeyDown(Keys.A)) moveDir -= FlatRight;
             if (input.IsKeyDown(Keys.D)) moveDir += FlatRight;
 
-            Vector3 position = Position;
-            _movement.HandleMovement(
-                ref position,
-                moveDir,
-                (float)Time.DeltaTime,
-                GetGroundHeight
-            );
-            Position = position;
+            Vector3 horizontalVelocity = _movement.HandleMovement(moveDir);
+            Vector3 pos = Position;
 
-            if (input.IsKeyDown(Keys.Space))
-                _movement.Jump();
+            if (input.IsKeyDown(Keys.Space)) _movement.Jump(ref pos);
+
+            _movement.MoveWithCollision(
+                ref pos,
+                horizontalVelocity,
+                (float)Time.DeltaTime,
+                IsSolid
+            );
+
+            Position = pos;
 
             List<PlayerInput> inputs = new();
-
             if (input.IsKeyDown(Keys.W)) inputs.Add(PlayerInput.MoveForward);
             if (input.IsKeyDown(Keys.S)) inputs.Add(PlayerInput.MoveBackward);
             if (input.IsKeyDown(Keys.A)) inputs.Add(PlayerInput.MoveLeft);
             if (input.IsKeyDown(Keys.D)) inputs.Add(PlayerInput.MoveRight);
             if (input.IsKeyDown(Keys.Space)) inputs.Add(PlayerInput.Jump);
+            if (mouse.IsButtonDown(MouseButton.Left)) inputs.Add(PlayerInput.BreakBlock);
+            if (mouse.IsButtonDown(MouseButton.Right)) inputs.Add(PlayerInput.PlaceBlock);
 
-            PlayerInputPacket playerInputPacket = new(
-                (ushort)GameClient.Instance.ClientId,
-                inputs
+            _ = GameClient.Instance.SendTcpMessage(
+                new PlayerInputPacket((ushort)GameClient.Instance.ClientId, inputs)
             );
-
-            _ = GameClient.Instance.SendTcpMessage(playerInputPacket);
         }
 
-        private float GetGroundHeight(Vector3 position)
+        private bool IsSolid(int x, int y, int z)
         {
             var map = CubeGameWindow.Instance.CurrentGameScene.Map;
-            if (map == null || map.CurrentChunks.Count == 0)
-                return 0f;
-
-            int wx = (int)MathF.Floor(position.X);
-            int wz = (int)MathF.Floor(position.Z);
-
-            float highestSolid = 0f;
+            if (map == null) return false;
 
             foreach (var chunk in map.CurrentChunks)
             {
                 var data = chunk.ChunkData;
-                Vector2 chunkOrigin = data.Position;
-
-                int cx = (int)(wx - chunkOrigin.X);
-                int cz = (int)(wz - chunkOrigin.Y);
+                Vector2 origin = data.Position;
+                int cx = x - (int)origin.X;
+                int cz = z - (int)origin.Y;
 
                 if (cx < 0 || cz < 0 ||
                     cx >= data.Voxels.GetLength(0) ||
                     cz >= data.Voxels.GetLength(2))
                     continue;
 
-                for (int y = data.Voxels.GetLength(1) - 1; y >= 0; y--)
-                {
-                    if (data.Voxels[cx, y, cz].VoxelType != Client.World.Enum.VoxelType.Empty)
-                    {
-                        float worldY = y + 1;
-                        if (worldY > highestSolid)
-                            highestSolid = worldY;
-
-                        break;
-                    }
-                }
+                if (y >= 0 && y < data.Voxels.GetLength(1))
+                    return data.Voxels[cx, y, cz].VoxelType != Client.World.Enum.VoxelType.Empty;
             }
 
-            return highestSolid;
+            return false;
         }
 
         private Vector3 FlatFront
@@ -151,8 +133,8 @@ namespace CubeEngine.Engine.Entities.Player
             get
             {
                 var f = GlobalFront;
-                f.Y = 0;   
-                return Vector3.Normalize(f);
+                f.Y = 0;
+                return f.LengthSquared > 0 ? Vector3.Normalize(f) : Vector3.UnitZ;
             }
         }
 
@@ -162,7 +144,7 @@ namespace CubeEngine.Engine.Entities.Player
             {
                 var r = GlobalRight;
                 r.Y = 0;
-                return Vector3.Normalize(r);
+                return r.LengthSquared > 0 ? Vector3.Normalize(r) : Vector3.UnitX;
             }
         }
     }

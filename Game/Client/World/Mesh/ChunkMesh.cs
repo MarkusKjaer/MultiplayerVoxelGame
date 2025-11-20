@@ -40,6 +40,7 @@ namespace CubeEngine.Engine.Client.World.Mesh
             vertexArray = new VertexArray(vertexBuffer, indexBuffer);
         }
 
+
         public override void Render()
         {
             base.Render();

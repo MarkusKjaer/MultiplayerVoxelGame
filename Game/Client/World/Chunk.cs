@@ -10,19 +10,16 @@ namespace CubeEngine.Engine.Client.World
         private ChunkData _chunkData;
         public ChunkMesh ChunkMesh { get; private set; }
 
-        public ChunkData ChunkData 
-        { 
-            get
-            {
-                return _chunkData;
-            } 
+        public ChunkData ChunkData
+        {
+            get => _chunkData;
             set
             {
                 _chunkData = value;
                 ChunkMesh.UpdateMesh(GenChunkMesh(_chunkData));
             }
         }
-        
+
         public Chunk(ChunkData chunkData, Material material)
         {
             _chunkData = chunkData;
@@ -185,6 +182,16 @@ namespace CubeEngine.Engine.Client.World
         public void Render()
         {
             ChunkMesh.Render();
+        }
+
+        public void Remove()
+        {
+            ChunkMesh.Dispose();
+        }
+
+        public void UpdateChunk()
+        {
+            ChunkMesh.UpdateMesh(GenChunkMesh(_chunkData));
         }
     }
 }

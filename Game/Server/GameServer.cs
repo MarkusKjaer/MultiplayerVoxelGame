@@ -92,7 +92,6 @@ namespace CubeEngine.Engine.Server
                     Packet packet = Packet.Deserialize(buffer);
                     ClientMessage?.Invoke(result.RemoteEndPoint, packet);
                 }
-                catch (ObjectDisposedException) { break; }
                 catch (Exception ex) { Console.WriteLine($"UDP Server error: {ex.Message}"); }
             }
         }

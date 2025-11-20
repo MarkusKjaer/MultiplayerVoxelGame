@@ -14,8 +14,6 @@ namespace CubeEngine.Engine.Client.World
 
         private Material _material;
 
-        private WorldGen _worldGen;
-
         public Map(int chunkSize, int maxWorldHeight, int seed, TextureArrayManager textureArrayManager)
         {
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -25,7 +23,6 @@ namespace CubeEngine.Engine.Client.World
             string vertShaderPath = Path.Combine(shadersPath, "MapChunk.vert");
             string fragShaderPath = Path.Combine(shadersPath, "MapChunk.frag");
 
-            // Ensure the shader files exist before reading
             if (!File.Exists(vertShaderPath) || !File.Exists(fragShaderPath))
             {
                 throw new FileNotFoundException("Shader file(s) not found.",
@@ -52,7 +49,16 @@ namespace CubeEngine.Engine.Client.World
 
         public void AddNewChunk(ChunkData chunkData)
         {
-            CurrentChunks.Add(new(chunkData, _material));
+            var chunkOnThisPos = CurrentChunks.Find(currentLoadedChunk => currentLoadedChunk.ChunkData.Position == chunkData.Position);
+
+            if (chunkOnThisPos != null)
+            {
+                chunkOnThisPos.ChunkData = chunkData;
+            }
+            else
+            {
+                CurrentChunks.Add(new(chunkData, _material));
+            }
         }
 
         public void UpdateMeshs(Camera camera, int windowWidth, int windowheight)
