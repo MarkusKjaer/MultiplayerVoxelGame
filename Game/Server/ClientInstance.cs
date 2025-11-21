@@ -22,7 +22,7 @@ namespace CubeEngine.Engine.Server
         private readonly TimeSpan _blockPlaceDelay = TimeSpan.FromMilliseconds(500);
 
         private DateTime _lastBlockBroken = DateTime.MinValue;
-private readonly TimeSpan _blockBreakDelay = TimeSpan.FromMilliseconds(500);
+        private readonly TimeSpan _blockBreakDelay = TimeSpan.FromMilliseconds(500);
 
         public BoundingBox BoundingBox
         {
@@ -70,6 +70,7 @@ private readonly TimeSpan _blockBreakDelay = TimeSpan.FromMilliseconds(500);
             Id = (ushort)Interlocked.Increment(ref _nextClientId);
 
             Head = new();
+
             TcpClient = client;
             EndPoint = (IPEndPoint)client.Client.RemoteEndPoint!;
 

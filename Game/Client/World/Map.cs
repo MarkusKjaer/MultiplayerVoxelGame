@@ -10,15 +10,13 @@ namespace CubeEngine.Engine.Client.World
     {
         public List<Chunk> CurrentChunks = [];
 
-        private int _maxChunkRendering;
-
         private Material _material;
 
         public Map(int chunkSize, int maxWorldHeight, int seed, TextureArrayManager textureArrayManager)
         {
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
-            string shadersPath = Path.Combine(parentDirectory, "Game", "Client", "Graphics", "Window", "Shaders", "MapShaders");
+            string parentDirectory = Directory.GetParent(baseDirectory).FullName;
+            string shadersPath = Path.Combine(parentDirectory, "Assets", "Shaders", "MapShaders");
 
             string vertShaderPath = Path.Combine(shadersPath, "MapChunk.vert");
             string fragShaderPath = Path.Combine(shadersPath, "MapChunk.frag");

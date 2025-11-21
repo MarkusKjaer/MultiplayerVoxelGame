@@ -9,8 +9,11 @@
 
   <ItemGroup>
     <Compile Remove="Game\Server\World\**" />
+    <Compile Remove="publish\**" />
     <EmbeddedResource Remove="Game\Server\World\**" />
+    <EmbeddedResource Remove="publish\**" />
     <None Remove="Game\Server\World\**" />
+    <None Remove="publish\**" />
   </ItemGroup>
 
   <ItemGroup>

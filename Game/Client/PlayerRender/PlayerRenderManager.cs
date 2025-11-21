@@ -11,27 +11,37 @@ namespace CubeEngine.Engine.Client.PlayerRender
         private List<PlayerRenderInstance> _instances = [];
 
         private static readonly string BaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        private static readonly string ParentDirectory = Directory.GetParent(BaseDirectory).Parent.Parent.Parent.FullName;
-        private static readonly string ObjFilePath = Path.Combine(ParentDirectory, "Models", "Suzanne.obj");
-        private static readonly string TexturePath = Path.Combine(ParentDirectory, "Models", "ondskab.png");
-        private static readonly string VertexShaderPath = Path.Combine(ParentDirectory, "Game", "Client", "Graphics", "Window", "Shaders", "Cube.vert");
-        private static readonly string FragmentShaderPath = Path.Combine(ParentDirectory, "Game", "Client", "Graphics", "Window", "Shaders", "Cube.frag");
+        private static readonly string ParentDirectory = Directory.GetParent(BaseDirectory).FullName;
+        private static readonly string HeadObjFilePath = Path.Combine(ParentDirectory, "Assets", "Head.obj");
+        private static readonly string HeadTexturePath = Path.Combine(ParentDirectory, "Assets", "HeadColor.png");
+        private static readonly string BodyObjFilePath = Path.Combine(ParentDirectory, "Assets", "Body.obj");
+        private static readonly string BodyTexturePath = Path.Combine(ParentDirectory, "Assets", "BodyColor.png");
+        private static readonly string VertexShaderPath = Path.Combine(ParentDirectory, "Assets", "Shaders", "Cube.vert");
+        private static readonly string FragmentShaderPath = Path.Combine(ParentDirectory, "Assets", "Shaders", "Cube.frag");
 
         private OBJFileReader _objFileReader;
-        private MeshInfo _meshInfo;
-        private Material _material;
-        private Mesh _playerMesh;
+        private MeshInfo _headMeshInfo;
+        private Material _headMaterial;
+        private MeshInfo _bodyMeshInfo;
+        private Material _bodyMaterial;
+        private Mesh _headMesh;
+        private Mesh _bodyMesh;
 
         public void Setup()
         {
             GameClient.Instance.ServerMessage += OnServerMessage;
 
             _objFileReader = new OBJFileReader();
-            _meshInfo = _objFileReader.ReadOBJFile(ObjFilePath);
-            TextureManager textureManager = new(TexturePath);
-            _material = new(VertexShaderPath, FragmentShaderPath, textureManager);
+            _headMeshInfo = _objFileReader.ReadOBJFile(HeadObjFilePath);
+            TextureManager headTextureManager = new(HeadTexturePath);
+            _headMaterial = new(VertexShaderPath, FragmentShaderPath, headTextureManager);
 
-            _playerMesh = new(_meshInfo, _material);
+            _bodyMeshInfo = _objFileReader.ReadOBJFile(BodyObjFilePath);
+            TextureManager bodyTextureManager = new(BodyTexturePath);
+            _bodyMaterial = new(VertexShaderPath, FragmentShaderPath, bodyTextureManager);
+
+            _headMesh = new(_headMeshInfo, _headMaterial);
+            _bodyMesh = new(_bodyMeshInfo, _bodyMaterial);
         }
 
         private void OnServerMessage(Packet packet)
@@ -50,7 +60,7 @@ namespace CubeEngine.Engine.Client.PlayerRender
                         GLActionQueue.Enqueue(() =>
                         {
                             PlayerRenderInstance instance = new();
-                            instance.Setup(playerStatePacket.ClientId, _playerMesh);
+                            instance.Setup(playerStatePacket.ClientId, _bodyMesh, _headMesh);
                             _instances.Add(instance);
                         });
                     }

@@ -20,14 +20,14 @@ namespace CubeEngine.Engine.Server
             ChunkSize = chunkSize;
             MaxWorldHeight = maxWorldHeight;
 
-            List<Vector2> chunksToGen =
-            [
-                new(0, 0), new(1, 0), new(2, 0), new(3, 0), new(4, 0),
-                new(0, 1), new(1, 1), new(2, 1), new(3, 1), new(4, 1),
-                new(0, 2), new(1, 2), new(2, 2), new(3, 2), new(4, 2),
-                new(0, 3), new(1, 3), new(2, 3), new(3, 3), new(4, 3),
-                new(0, 4), new(1, 4), new(2, 4), new(3, 4), new(4, 4),
-            ];
+            //List<Vector2> chunksToGen =
+            //[
+            //    new(0, 0), new(1, 0), new(2, 0), new(3, 0), new(4, 0),
+            //    new(0, 1), new(1, 1), new(2, 1), new(3, 1), new(4, 1),
+            //    new(0, 2), new(1, 2), new(2, 2), new(3, 2), new(4, 2),
+            //    new(0, 3), new(1, 3), new(2, 3), new(3, 3), new(4, 3),
+            //    new(0, 4), new(1, 4), new(2, 4), new(3, 4), new(4, 4),
+            //];
 
             if (seed == 0)
             {
@@ -38,12 +38,12 @@ namespace CubeEngine.Engine.Server
                 _worldGen = new WorldGen(seed);
             }
 
-            var newChunks = _worldGen.GenPartOfWorld(chunkSize, maxWorldHeight, chunksToGen);
+            //var newChunks = _worldGen.GenPartOfWorld(chunkSize, maxWorldHeight, chunksToGen);
 
-            for (int i = 0; i < newChunks.Count; i++)
-            {
-                CurrentChunks.Add(newChunks[i].Position / ChunkSize, new ServerChunk(newChunks[i]));
-            }
+            //for (int i = 0; i < newChunks.Count; i++)
+            //{
+            //    CurrentChunks.Add(newChunks[i].Position / ChunkSize, new ServerChunk(newChunks[i]));
+            //}
 
             GameServer.Instance.ClientMessage += OnClientMessage;
         }
@@ -56,11 +56,32 @@ namespace CubeEngine.Engine.Server
             switch (packet)
             {
                 case ChunkRequestPacket req:
-                    ChunkData chunk = CurrentChunks[req.ChunkPos].ChunkData;
+                    try
+                    {
+                        Vector2 chunkPos = req.ChunkPos;
 
-                    ChunkInfoPacket response = new(chunk, ChunkSize, MaxWorldHeight);
-                    _ = GameServer.Instance.SendTcpPacket(client.TcpClient, response);
+                        if (!CurrentChunks.TryGetValue(chunkPos, out var serverChunk))
+                        {
+                            var chunksToGen = new List<Vector2> { chunkPos };
+                            var newChunks = _worldGen.GenPartOfWorld(ChunkSize, MaxWorldHeight, chunksToGen);
 
+                            if (newChunks.Count > 0)
+                            {
+                                var newChunkData = newChunks[0];
+                                serverChunk = new ServerChunk(newChunkData);
+                                CurrentChunks.Add(chunkPos, serverChunk);
+
+                                Console.WriteLine($"Generated new chunk at {chunkPos.X}, {chunkPos.Y}");
+                            }
+                        }
+
+                        ChunkInfoPacket response = new(serverChunk.ChunkData, ChunkSize, MaxWorldHeight);
+                        _ = GameServer.Instance.SendTcpPacket(client.TcpClient, response);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
                     break;
             }
         }

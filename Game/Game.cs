@@ -22,22 +22,24 @@ namespace CubeEngine.Engine
 
         public GameServer? Server { get; private set; }
 
-        public async Task StartNetworkingAsync(NetworkRole role)
+        public async Task StartNetworkingAsync(NetworkRole role, string ip, int tcpPort, int udpPort)
         {
             if (role == NetworkRole.Server || role == NetworkRole.Host)
             {
                 string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
-                Noise.LoadHeightmap(Path.Combine(parentDirectory, "Util", "NoiseImage", "perlin.png"));
+                string parentDirectory = Directory.GetParent(baseDirectory).FullName;
+                Noise.LoadHeightmap(Path.Combine(parentDirectory, "Assets", "perlin.png"));
 
-                Server = new GameServer(8000, 9000);
+                Server = new GameServer(tcpPort, udpPort);
                 await Server.StartAsync();
+                Console.WriteLine($"Server started on TCP:{tcpPort} UDP:{udpPort}");
             }
 
             if (role == NetworkRole.Client || role == NetworkRole.Host)
             {
-                Client = new GameClient("localhost", 8000, 9000);
-                Client.StartAsync();
+                Client = new GameClient(ip, tcpPort, udpPort);
+                await Client.StartAsync();
+                Console.WriteLine($"Client connecting to {ip}:{tcpPort}/{udpPort}");
             }
         }
 
@@ -59,19 +61,11 @@ namespace CubeEngine.Engine
             camera.Instantiate();
             CurrentGameScene.ActiveCamera = camera;
 
-            //OBJFileReader oBJFileReader = new OBJFileReader();
-
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string parentDirectory = Directory.GetParent(baseDirectory).Parent.Parent.Parent.FullName;
-            //string objFilePath = Path.Combine(parentDirectory, "Models", "Suzanne.obj");
-
-            //MeshInfo meshInfo = oBJFileReader.ReadOBJFile(objFilePath);
+            string parentDirectory = Directory.GetParent(baseDirectory).FullName;
 
             TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
             CurrentGameScene.Map = new(32, 64, 1, textureArrayManagerForMap);
-
-            //TextureManager textureManager = new(Path.Combine(parentDirectory, "Models", "ondskab.png"));
-            //Material material = new(Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.vert"), Path.Combine(parentDirectory, "Engine", "Client", "Graphics", "Window", "Shaders", "Cube.frag"), textureManager);
 
             PlayerRenderManager playerRenderManager = new();
 
@@ -83,7 +77,7 @@ namespace CubeEngine.Engine
 
         private TextureArrayManager LoadWorldTextures(string parentDirectory)
         {
-            string pathToWorldTextures = Path.Combine(parentDirectory, "Models", "WorldTexture", "textures.xml");
+            string pathToWorldTextures = Path.Combine(parentDirectory, "Assets", "WorldTexture", "textures.xml");
 
             XDocument xmlDoc = XDocument.Load(pathToWorldTextures);
 
@@ -94,7 +88,7 @@ namespace CubeEngine.Engine
                 string filename = texture.Element("filename")?.Value ?? "";
                 if (!string.IsNullOrEmpty(filename))
                 {
-                    textureNames.Add(Path.Combine(parentDirectory, "Models", "WorldTexture", filename));
+                    textureNames.Add(Path.Combine(parentDirectory, "Assets", "WorldTexture", filename));
                 }
             }
 
