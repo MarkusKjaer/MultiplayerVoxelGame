@@ -117,7 +117,7 @@ namespace CubeEngine.Engine.Server
                     TcpClient tcpClient = await _tcpListener!.AcceptTcpClientAsync();
                     var clientInstance = new ClientInstance(tcpClient);
 
-                    clientInstance.Setup(new(80, 40, 80));
+                    clientInstance.Setup(new(80, 60, 80));
 
                     ClientInstances[tcpClient] = clientInstance;
 

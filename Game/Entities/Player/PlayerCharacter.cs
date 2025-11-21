@@ -1,7 +1,6 @@
 ﻿using CubeEngine.Engine.Client;
 using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Network;
-using CubeEngine.Engine.Util;
 using CubeEngine.Util;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -13,6 +12,10 @@ namespace CubeEngine.Engine.Entities.Player
         private MovementController _movement;
 
         private readonly Vector3 PlayerSize = new(0.6f, 1.8f, 0.6f);
+
+        private float _chunkCheckCooldown = 0f;
+        private const float ChunkCheckInterval = 5f;
+        private const int ChunkRadius = 1;
 
         public PlayerCharacter(Vector3 position)
         {
@@ -26,10 +29,6 @@ namespace CubeEngine.Engine.Entities.Player
             );
 
             GameClient.Instance.ServerMessage += OnServerMessage;
-
-            for (int x = 0; x <= 4; x++)
-                for (int z = 0; z <= 4; z++)
-                    _ = GameClient.Instance.SendTcpMessage(new ChunkRequestPacket(new Vector2(x, z)));
         }
 
         private void OnServerMessage(Packet packet)
@@ -49,20 +48,19 @@ namespace CubeEngine.Engine.Entities.Player
             HandleInput();
 
             Vector3 pos = Position;
-
             _movement.PrePhysicsGroundCheck(ref pos, IsSolid);
-
             Vector3 velocity = _movement.ApplyGravity((float)Time.DeltaTime);
-
-            _movement.MoveWithCollision(
-                ref pos,
-                velocity,
-                (float)Time.DeltaTime,
-                IsSolid
-            );
-
+            _movement.MoveWithCollision(ref pos, velocity, (float)Time.DeltaTime, IsSolid);
             Position = pos;
+
+            _chunkCheckCooldown -= (float)Time.DeltaTime;
+            if (_chunkCheckCooldown <= 0f)
+            {
+                RequestNearbyChunks();
+                _chunkCheckCooldown = ChunkCheckInterval;
+            }
         }
+
 
         private void HandleInput()
         {
@@ -103,6 +101,30 @@ namespace CubeEngine.Engine.Entities.Player
                 new PlayerInputPacket((ushort)GameClient.Instance.ClientId, inputs)
             );
         }
+
+        private void RequestNearbyChunks()
+        {
+            var map = CubeGameWindow.Instance.CurrentGameScene.Map;
+            if (map == null) return;
+
+            int playerChunkX = (int)MathF.Floor(3);
+            int playerChunkZ = (int)MathF.Floor(3);
+
+            for (int dx = -ChunkRadius; dx <= ChunkRadius; dx++)
+            {
+                for (int dz = -ChunkRadius; dz <= ChunkRadius; dz++)
+                {
+                    Vector2 chunkPos = new(playerChunkX + dx, playerChunkZ + dz);
+
+                    bool loaded = map.CurrentChunks.Exists(c => c.ChunkData.Position == chunkPos * 32);
+                    if (!loaded)
+                    {
+                        _ = GameClient.Instance.SendTcpMessage(new ChunkRequestPacket(chunkPos));
+                    }
+                }
+            }
+        }
+
 
         private bool IsSolid(int x, int y, int z)
         {

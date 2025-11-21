@@ -43,7 +43,6 @@ namespace CubeEngine.Engine
             }
         }
 
-
         public void Run()
         {
             CurrentGameScene = new("testGameScene");

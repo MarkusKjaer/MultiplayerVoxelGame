@@ -10,8 +10,6 @@ namespace CubeEngine.Engine.Client.World
     {
         public List<Chunk> CurrentChunks = [];
 
-        private int _maxChunkRendering;
-
         private Material _material;
 
         public Map(int chunkSize, int maxWorldHeight, int seed, TextureArrayManager textureArrayManager)
