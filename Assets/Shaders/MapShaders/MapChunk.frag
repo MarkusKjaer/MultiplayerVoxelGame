@@ -7,6 +7,7 @@ in vec3 FragPos;
 in vec3 Normal;
 
 flat in int vLayer; 
+in float vAO;
 
 uniform mediump sampler2DArray ourTextureArray;
 uniform vec3 lightPos;  
@@ -26,7 +27,7 @@ void main()
     vec3 diffuse = diff * lightColor;
 
     // Combine lighting
-    vec3 lighting = ambient + diffuse;
+    vec3 lighting = (ambient + diffuse) * vAO;
 
     // Sample texture and apply object color
     vec3 texColor = texture(ourTextureArray, vec3(vTexCoord, vLayer)).rgb * objectColor;

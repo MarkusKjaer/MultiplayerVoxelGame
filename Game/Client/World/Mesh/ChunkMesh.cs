@@ -9,7 +9,7 @@ namespace CubeEngine.Engine.Client.World.Mesh
     {
         public ChunkMesh(ChunkMeshInfo meshInfo, Material material) : base(meshInfo, material)
         {
-            vertexBuffer = new VertexBuffer(VertexPositionNormalTextureLayer.vertexInfo, _meshInfo.VertexCount, true);
+            vertexBuffer = new VertexBuffer(VertexPositionNormalTextureLayerAO.vertexInfo, _meshInfo.VertexCount, true);
             vertexBuffer.SetData(_meshInfo.Vertices, _meshInfo.VertexCount);
 
             indexBuffer = new(_meshInfo.IndexCount, true);
@@ -31,7 +31,7 @@ namespace CubeEngine.Engine.Client.World.Mesh
 
             _meshInfo = newMeshInfo;
 
-            vertexBuffer = new VertexBuffer(VertexPositionNormalTextureLayer.vertexInfo, _meshInfo.VertexCount, true);
+            vertexBuffer = new VertexBuffer(VertexPositionNormalTextureLayerAO.vertexInfo, _meshInfo.VertexCount, true);
             vertexBuffer.SetData(_meshInfo.Vertices, _meshInfo.VertexCount);
 
             indexBuffer = new(_meshInfo.IndexCount, true);
@@ -57,10 +57,10 @@ namespace CubeEngine.Engine.Client.World.Mesh
     {
         public readonly int VertexCount { get; }
         public readonly int IndexCount { get; }
-        public readonly VertexPositionNormalTextureLayer[] Vertices { get; }
+        public readonly VertexPositionNormalTextureLayerAO[] Vertices { get; }
         public readonly int[] Indices { get; }
 
-        public ChunkMeshInfo(VertexPositionNormalTextureLayer[] vertexPositions, int[] indices)
+        public ChunkMeshInfo(VertexPositionNormalTextureLayerAO[] vertexPositions, int[] indices)
         {
             Vertices = vertexPositions;
             VertexCount = Vertices.Length;

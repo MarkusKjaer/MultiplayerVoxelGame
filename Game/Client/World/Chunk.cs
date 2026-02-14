@@ -29,129 +29,208 @@ namespace CubeEngine.Engine.Client.World
 
         private ChunkMeshInfo GenChunkMesh(ChunkData chunkData)
         {
-            List<VertexPositionNormalTextureLayer> vertexPositions = [];
+            List<VertexPositionNormalTextureLayerAO> vertices = [];
             List<int> indices = [];
-
             int vertexOffset = 0;
 
             for (int i = 0; i < chunkData.Voxels.GetLength(0); i++)
-            {
                 for (int j = 0; j < chunkData.Voxels.GetLength(1); j++)
-                {
                     for (int k = 0; k < chunkData.Voxels.GetLength(2); k++)
                     {
-                        if (chunkData.Voxels[i, j, k].VoxelType == Enum.VoxelType.Empty) continue;
+                        if (chunkData.Voxels[i, j, k].VoxelType == Enum.VoxelType.Empty)
+                            continue;
 
                         int textureLayer = (int)chunkData.Voxels[i, j, k].VoxelType - 1;
+                        Vector3 pos = new(i, j, k);
 
-                        Vector3 voxelPosition = new(i, j, k);
+                        Vector3 v000 = pos + new Vector3(0, 0, 0);
+                        Vector3 v100 = pos + new Vector3(1, 0, 0);
+                        Vector3 v010 = pos + new Vector3(0, 1, 0);
+                        Vector3 v110 = pos + new Vector3(1, 1, 0);
+                        Vector3 v001 = pos + new Vector3(0, 0, 1);
+                        Vector3 v101 = pos + new Vector3(1, 0, 1);
+                        Vector3 v011 = pos + new Vector3(0, 1, 1);
+                        Vector3 v111 = pos + new Vector3(1, 1, 1);
 
-                        // Define cube vertices relative to the voxel position
-                        Vector3 v000 = voxelPosition + new Vector3(0, 0, 0);
-                        Vector3 v100 = voxelPosition + new Vector3(1, 0, 0);
-                        Vector3 v010 = voxelPosition + new Vector3(0, 1, 0);
-                        Vector3 v110 = voxelPosition + new Vector3(1, 1, 0);
-                        Vector3 v001 = voxelPosition + new Vector3(0, 0, 1);
-                        Vector3 v101 = voxelPosition + new Vector3(1, 0, 1);
-                        Vector3 v011 = voxelPosition + new Vector3(0, 1, 1);
-                        Vector3 v111 = voxelPosition + new Vector3(1, 1, 1);
-
-                        // Define normals for each face
-                        Vector3 normalZPlus = new(0, 0, 1);
-                        Vector3 normalZMinus = new(0, 0, -1);
-                        Vector3 normalXPlus = new(1, 0, 0);
-                        Vector3 normalXMinus = new(-1, 0, 0);
-                        Vector3 normalYPlus = new(0, 1, 0);
-                        Vector3 normalYMinus = new(0, -1, 0);
-
-                        // Texture coordinates
                         Vector2 uv00 = new(0, 0);
                         Vector2 uv10 = new(1, 0);
                         Vector2 uv01 = new(0, 1);
                         Vector2 uv11 = new(1, 1);
 
-                        // Front face (Z+)
+                        // Z+
                         if (GetVoxel(i, j, k + 1).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v001, normalZPlus, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v101, normalZPlus, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v011, normalZPlus, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v111, normalZPlus, uv11, textureLayer));
-
-                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
-                            indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-                            vertexOffset += 4;
+                            AddFace(vertices, indices, ref vertexOffset,
+                                new[] { v001, v101, v011, v111 },
+                                new Vector3(0, 0, 1),
+                                new[] { uv00, uv10, uv01, uv11 },
+                                textureLayer,
+                                i, j, k,
+                                new (int, int, int)[]
+                                {
+                                    (-1,0,0),(0,-1,0),
+                                    ( 1,0,0),(0,-1,0),
+                                    (-1,0,0),(0, 1,0),
+                                    ( 1,0,0),(0, 1,0)
+                                });
                         }
-
-                        // Back face (Z-)
+                        // Z-
                         if (GetVoxel(i, j, k - 1).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v000, normalZMinus, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v010, normalZMinus, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v100, normalZMinus, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v110, normalZMinus, uv11, textureLayer));
-
-                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
-                            indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-                            vertexOffset += 4;
+                            AddFace(vertices, indices, ref vertexOffset,
+                                new[] { v000, v010, v100, v110 },
+                                new Vector3(0, 0, -1),
+                                new[] { uv00, uv01, uv10, uv11 },
+                                textureLayer,
+                                i, j, k,
+                                new (int, int, int)[]
+                                {
+                                    (-1,0,0),(0,-1,0),
+                                    (-1,0,0),(0, 1,0),
+                                    ( 1,0,0),(0,-1,0),
+                                    ( 1,0,0),(0, 1,0)
+                                });
                         }
-
-                        // Left face (X-)
-                        if (GetVoxel(i - 1, j, k).VoxelType == Enum.VoxelType.Empty)
-                        {
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v000, normalXMinus, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v010, normalXMinus, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v001, normalXMinus, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v011, normalXMinus, uv11, textureLayer));
-
-                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
-                            indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-                            vertexOffset += 4;
-                        }
-
-                        // Right face (X+)
+                        // X+
                         if (GetVoxel(i + 1, j, k).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v100, normalXPlus, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v110, normalXPlus, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v101, normalXPlus, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v111, normalXPlus, uv11, textureLayer));
-
-                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
-                            indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-                            vertexOffset += 4;
+                            AddFace(vertices, indices, ref vertexOffset,
+                                new[] { v100, v110, v101, v111 },
+                                new Vector3(1, 0, 0),
+                                new[] { uv00, uv01, uv10, uv11 },
+                                textureLayer,
+                                i, j, k,
+                                new (int, int, int)[]
+                                {
+                                    (0,-1,0),(0,0,-1),
+                                    (0, 1,0),(0,0,-1),
+                                    (0,-1,0),(0,0, 1),
+                                    (0, 1,0),(0,0, 1)
+                                });
                         }
-
-                        // Top face (Y+)
+                        // X-
+                        if (GetVoxel(i - 1, j, k).VoxelType == Enum.VoxelType.Empty)
+                        {
+                            AddFace(vertices, indices, ref vertexOffset,
+                                new[] { v000, v010, v001, v011 },
+                                new Vector3(-1, 0, 0),
+                                new[] { uv00, uv10, uv01, uv11 },
+                                textureLayer,
+                                i, j, k,
+                                new (int, int, int)[]
+                                {
+                                    (0,-1,0),(0,0,-1),
+                                    (0, 1,0),(0,0,-1),
+                                    (0,-1,0),(0,0, 1),
+                                    (0, 1,0),(0,0, 1)
+                                });
+                        }
+                        // Y+
                         if (GetVoxel(i, j + 1, k).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v010, normalYPlus, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v011, normalYPlus, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v110, normalYPlus, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v111, normalYPlus, uv11, textureLayer));
-
-                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
-                            indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-                            vertexOffset += 4;
+                            AddFace(vertices, indices, ref vertexOffset,
+                                new[] { v010, v011, v110, v111 },
+                                new Vector3(0, 1, 0),
+                                new[] { uv00, uv10, uv01, uv11 },
+                                textureLayer,
+                                i, j, k,
+                                new (int, int, int)[]
+                                {
+                                    (-1,0,0),(0,0,-1),
+                                    (-1,0,0),(0,0, 1),
+                                    ( 1,0,0),(0,0,-1),
+                                    ( 1,0,0),(0,0, 1)
+                                });
                         }
-
-                        // Bottom face (Y-)
+                        // Y-
                         if (GetVoxel(i, j - 1, k).VoxelType == Enum.VoxelType.Empty)
                         {
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v000, normalYMinus, uv00, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v001, normalYMinus, uv10, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v100, normalYMinus, uv01, textureLayer));
-                            vertexPositions.Add(new VertexPositionNormalTextureLayer(v101, normalYMinus, uv11, textureLayer));
-
-                            indices.AddRange([vertexOffset, vertexOffset + 1, vertexOffset + 2]);
-                            indices.AddRange([vertexOffset + 1, vertexOffset + 3, vertexOffset + 2]);
-                            vertexOffset += 4;
+                            AddFace(vertices, indices, ref vertexOffset,
+                                new[] { v000, v001, v100, v101 },
+                                new Vector3(0, -1, 0),
+                                new[] { uv00, uv10, uv01, uv11 },
+                                textureLayer,
+                                i, j, k,
+                                new (int, int, int)[]
+                                {
+                                    (-1,0,0),(0,0,-1),
+                                    (-1,0,0),(0,0, 1),
+                                    ( 1,0,0),(0,0,-1),
+                                    ( 1,0,0),(0,0, 1)
+                                });
                         }
+
                     }
-                }
+
+            return new ChunkMeshInfo([.. vertices], [.. indices]);
+        }
+
+        private void AddFace(
+            List<VertexPositionNormalTextureLayerAO> vertices,
+            List<int> indices,
+            ref int vertexOffset,
+            Vector3[] positions,
+            Vector3 normal,
+            Vector2[] uvs,
+            int textureLayer,
+            int x, int y, int z,
+            (int x, int y, int z)[] aoOffsets)
+        {
+            float[] ao = new float[4];
+
+            for (int v = 0; v < 4; v++)
+            {
+                var side1Off = aoOffsets[v * 2];
+                var side2Off = aoOffsets[v * 2 + 1];
+
+                var cornerOff = (side1Off.x + side2Off.x, side1Off.y + side2Off.y, side1Off.z + side2Off.z);
+
+                bool side1 = GetVoxel(x + side1Off.x + (int)normal.X, y + side1Off.y + (int)normal.Y, z + side1Off.z + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
+                bool side2 = GetVoxel(x + side2Off.x + (int)normal.X, y + side2Off.y + (int)normal.Y, z + side2Off.z + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
+                bool corner = GetVoxel(x + cornerOff.Item1 + (int)normal.X, y + cornerOff.Item2 + (int)normal.Y, z + cornerOff.Item3 + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
+
+                ao[v] = ComputeAO(side1, side2, corner);
             }
 
-            return new ChunkMeshInfo([.. vertexPositions], [.. indices]);
+            // Flips the quad triangulation to ensure smooth AO gradients
+            if (ao[0] + ao[3] > ao[1] + ao[2])
+            {
+                //flipped
+                indices.Add((short)(vertexOffset + 2));
+                indices.Add((short)(vertexOffset + 3));
+                indices.Add(vertexOffset);
+                indices.Add((short)(vertexOffset + 3));
+                indices.Add((short)(vertexOffset + 1));
+                indices.Add(vertexOffset);
+            }
+            else
+            {
+                indices.Add((short)(vertexOffset + 3));
+                indices.Add((short)(vertexOffset + 1));
+                indices.Add((short)(vertexOffset + 2));
+                indices.Add((short)(vertexOffset + 2));
+                indices.Add((short)(vertexOffset + 1));
+                indices.Add(vertexOffset);
+            }
+
+            for (int v = 0; v < 4; v++)
+            {
+                vertices.Add(new VertexPositionNormalTextureLayerAO(positions[v], normal, uvs[v], textureLayer, ao[v]));
+            }
+
+            vertexOffset += 4;
+        }
+
+        private float ComputeAO(bool side1, bool side2, bool corner)
+        {
+            if (side1 && side2) return 0.0f;
+
+            int value = 0;
+            if (side1) value++;
+            if (side2) value++;
+            if (corner) value++;
+
+            return (3 - value) / 3.0f;
         }
 
         public Voxel GetVoxel(int x, int y, int z)

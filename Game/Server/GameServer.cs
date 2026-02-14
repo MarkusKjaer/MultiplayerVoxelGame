@@ -1,14 +1,16 @@
 ﻿using CubeEngine.Engine.Network;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace CubeEngine.Engine.Server
 {
     public class GameServer
     {
         public static GameServer? Instance { get; private set; }
+
+        private const int CHUNK_SIZE = 16;
+        private const int CHUNK_HEIGHT = 64;
+        private const int MAP_SEED = 1;
 
         public event Action<IPEndPoint, Packet>? ClientMessage;
 
@@ -35,7 +37,7 @@ namespace CubeEngine.Engine.Server
 
             Instance = this;
 
-            ServerMap = new(32, 64, 1);
+            ServerMap = new(CHUNK_SIZE, CHUNK_HEIGHT, MAP_SEED);
 
             ClientMessage += OnClientMessage;
         }

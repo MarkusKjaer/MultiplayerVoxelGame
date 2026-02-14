@@ -75,20 +75,44 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             );
     }
     */
-    public readonly struct VertexPositionNormalTextureLayer(Vector3 position, Vector3 normal, Vector2 texCoord, float layer)
+    //public readonly struct VertexPositionNormalTextureLayer(Vector3 position, Vector3 normal, Vector2 texCoord, float layer)
+    //{
+    //    public readonly Vector3 Position { get; } = position;
+    //    public readonly Vector3 Normal { get; } = normal;
+    //    public readonly Vector2 TexCoord { get; } = texCoord;
+    //    public readonly float Layer { get; } = layer;
+
+    //    public static readonly VertexInfo vertexInfo = new VertexInfo(
+    //        typeof(VertexPositionNormalTextureLayer),
+    //        new VertexAttribute("Position", 0, 3, 0),
+    //        new VertexAttribute("Normal", 1, 3, 3 * sizeof(float)),
+    //        new VertexAttribute("TexCoord", 2, 2, (3 + 3) * sizeof(float)),
+    //        new VertexAttribute("Layer", 3, 1, (3 + 3 + 2) * sizeof(float))
+    //        );
+    //}
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public readonly struct VertexPositionNormalTextureLayerAO(
+    Vector3 position,
+    Vector3 normal,
+    Vector2 texCoord,
+    float layer,
+    float ao)
     {
         public readonly Vector3 Position { get; } = position;
         public readonly Vector3 Normal { get; } = normal;
         public readonly Vector2 TexCoord { get; } = texCoord;
         public readonly float Layer { get; } = layer;
+        public readonly float AO { get; } = ao;
 
         public static readonly VertexInfo vertexInfo = new VertexInfo(
-            typeof(VertexPositionNormalTextureLayer),
+            typeof(VertexPositionNormalTextureLayerAO),
             new VertexAttribute("Position", 0, 3, 0),
             new VertexAttribute("Normal", 1, 3, 3 * sizeof(float)),
-            new VertexAttribute("TexCoord", 2, 2, (3 + 3) * sizeof(float)),
-            new VertexAttribute("Layer", 3, 1, (3 + 3 + 2) * sizeof(float))
-            );
+            new VertexAttribute("TexCoord", 2, 2, 6 * sizeof(float)),
+            new VertexAttribute("Layer", 3, 1, 8 * sizeof(float)),
+            new VertexAttribute("AO", 4, 1, 9 * sizeof(float))
+        );
     }
 }
 

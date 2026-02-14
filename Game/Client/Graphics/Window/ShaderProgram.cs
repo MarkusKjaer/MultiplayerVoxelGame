@@ -88,7 +88,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
         {
             if (!GetShaderUnitform(name, out ShaderUniform uniform))
             {
-                throw new ArgumentException("Name was not found");
+                throw new ArgumentException("Name was not found: " + name);
             }
 
             if (uniform.Type != ActiveUniformType.Float)
@@ -105,7 +105,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
         {
             if (!GetShaderUnitform(name, out ShaderUniform uniform))
             {
-                throw new ArgumentException("Name was not found");
+                throw new ArgumentException("Name was not found: " + name);
             }
 
             if (uniform.Type != ActiveUniformType.FloatVec2)
@@ -140,11 +140,11 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             SetUnitform(name, vector.X, vector.Y, vector.Z);    
         }
 
-        public void SetUnitform(string name, OpenTK.Mathematics.Matrix4 matrix)
+        public void SetUnitform(string name, Matrix4 matrix)
         {
             if (!GetShaderUnitform(name, out ShaderUniform uniform))
             {
-                throw new ArgumentException("Name was not found");
+                throw new ArgumentException("Name was not found: " + name);
             }
 
             if (uniform.Type != ActiveUniformType.FloatMat4)
