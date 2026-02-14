@@ -1,14 +1,18 @@
-﻿using CubeEngine.Engine.Client.Graphics;
+﻿using OpenTK.Mathematics;
+using CubeEngine.Engine.Client.Graphics;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
 using CubeEngine.Engine.Network;
 using MultiplayerVoxelGame.Game.Resources;
+using System.Collections.Generic;
 
 namespace CubeEngine.Engine.Client.World
 {
     public class Map
     {
-        public List<Chunk> CurrentChunks = [];
+        private readonly object _chunkLock = new object();
+
+        public Dictionary<Vector2, Chunk> CurrentChunks = new();
 
         private Material _material;
 
@@ -33,41 +37,46 @@ namespace CubeEngine.Engine.Client.World
             switch (packet)
             {
                 case ChunkInfoPacket chunkInfoPacket:
+                    // Process through GLActionQueue to ensure OpenGL calls stay on the main thread
                     GLActionQueue.Enqueue(() => AddNewChunk(chunkInfoPacket.ChunkData));
                     break;
-                default:
-                    break;
             }
-
         }
 
         public void AddNewChunk(ChunkData chunkData)
         {
-            var chunkOnThisPos = CurrentChunks.Find(currentLoadedChunk => currentLoadedChunk.ChunkData.Position == chunkData.Position);
-
-            if (chunkOnThisPos != null)
+            lock (_chunkLock)
             {
-                chunkOnThisPos.ChunkData = chunkData;
-            }
-            else
-            {
-                CurrentChunks.Add(new(chunkData, _material));
+                if (CurrentChunks.TryGetValue(chunkData.Position, out var existingChunk))
+                {
+                    existingChunk.ChunkData = chunkData;
+                }
+                else
+                {
+                    CurrentChunks.Add(chunkData.Position, new Chunk(chunkData, _material));
+                }
             }
         }
 
         public void UpdateMeshs(Camera camera, int windowWidth, int windowheight)
         {
-            for (int i = 0; i < CurrentChunks.Count; i++)
+            lock (_chunkLock)
             {
-                CurrentChunks[i].OnUpdate();
+                foreach (var chunk in CurrentChunks.Values)
+                {
+                    chunk.OnUpdate();
+                }
             }
         }
 
         public void Render()
         {
-            for (int i = 0; i < CurrentChunks.Count; i++)
+            lock (_chunkLock)
             {
-                CurrentChunks[i].Render();
+                foreach (var chunk in CurrentChunks.Values)
+                {
+                    chunk.Render();
+                }
             }
         }
     }

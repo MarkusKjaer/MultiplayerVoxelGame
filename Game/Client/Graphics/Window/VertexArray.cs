@@ -71,8 +71,6 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             disposed = true;
             GC.SuppressFinalize(this);
         }
-
-
     }
 }
 

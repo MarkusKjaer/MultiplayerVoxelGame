@@ -89,12 +89,12 @@ namespace CubeEngine.Engine.Client.Graphics.Window
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
+            GLActionQueue.ProcessAll();
+
             OnNewDeltaTime?.Invoke(args.Time);
 
             CurrentGameScene.Update();
             CurrentGameScene.LateUpdate();
-
-            GLActionQueue.ProcessAll();
 
             base.OnUpdateFrame(args);
         }

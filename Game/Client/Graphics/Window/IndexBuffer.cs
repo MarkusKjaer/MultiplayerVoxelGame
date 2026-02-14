@@ -18,6 +18,8 @@ namespace CubeEngine.Engine.Client.Graphics.Window
         {
             disposed = false;
 
+            IsStatic = isStatic;
+
             if (indexCount < MinVertexCount ||
                 indexCount > MaxVertexCount)
             {
@@ -33,8 +35,16 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             }
 
             IndexBufferHandle = GL.GenBuffer();
+
+            // Prevent modifying the ELEMENT_ARRAY_BUFFER binding of any currently-bound VAO:
+            int prevVao = GL.GetInteger(GetPName.VertexArrayBinding);
+            GL.BindVertexArray(0);
+
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferHandle);
             GL.BufferData(BufferTarget.ElementArrayBuffer, IndexCount * sizeof(int), nint.Zero, hint);
+
+            // Restore previous VAO binding
+            GL.BindVertexArray(prevVao);
         }
 
         ~IndexBuffer()
@@ -46,7 +56,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
         {
             if (disposed) return;
 
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            // Deleting the buffer is sufficient; avoid binding 0 here which would alter any bound VAO's stored binding.
             GL.DeleteBuffer(IndexBufferHandle);
 
             disposed = true;
@@ -72,10 +82,15 @@ namespace CubeEngine.Engine.Client.Graphics.Window
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
+            // Prevent modifying the ELEMENT_ARRAY_BUFFER binding of any currently-bound VAO:
+            int prevVao = GL.GetInteger(GetPName.VertexArrayBinding);
+            GL.BindVertexArray(0);
+
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferHandle);
             GL.BufferSubData(BufferTarget.ElementArrayBuffer, nint.Zero, count * sizeof(int), data);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+
+            // Restore previous VAO binding
+            GL.BindVertexArray(prevVao);
         }
     }
 }
-
