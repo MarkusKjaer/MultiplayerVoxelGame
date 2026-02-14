@@ -3,6 +3,7 @@ using CubeEngine.Engine.Entities;
 using CubeEngine.Engine.Network;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
+using MultiplayerVoxelGame.Game.Resources;
 
 namespace CubeEngine.Engine.Client.PlayerRender
 {
@@ -10,14 +11,12 @@ namespace CubeEngine.Engine.Client.PlayerRender
     {
         private List<PlayerRenderInstance> _instances = [];
 
-        private static readonly string BaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        private static readonly string ParentDirectory = Directory.GetParent(BaseDirectory).FullName;
-        private static readonly string HeadObjFilePath = Path.Combine(ParentDirectory, "Assets", "Head.obj");
-        private static readonly string HeadTexturePath = Path.Combine(ParentDirectory, "Assets", "HeadColor.png");
-        private static readonly string BodyObjFilePath = Path.Combine(ParentDirectory, "Assets", "Body.obj");
-        private static readonly string BodyTexturePath = Path.Combine(ParentDirectory, "Assets", "BodyColor.png");
-        private static readonly string VertexShaderPath = Path.Combine(ParentDirectory, "Assets", "Shaders", "Cube.vert");
-        private static readonly string FragmentShaderPath = Path.Combine(ParentDirectory, "Assets", "Shaders", "Cube.frag");
+        private static readonly string HeadObjFilePath = AssetsManager.Instance.LoadedAssets[("Head", AssetType.OBJ)].FilePath;
+        private static readonly string HeadTexturePath = AssetsManager.Instance.LoadedAssets[("HeadColor", AssetType.PNG)].FilePath;
+        private static readonly string BodyObjFilePath = AssetsManager.Instance.LoadedAssets[("Body", AssetType.OBJ)].FilePath;
+        private static readonly string BodyTexturePath = AssetsManager.Instance.LoadedAssets[("BodyColor", AssetType.PNG)].FilePath;
+        private static readonly string VertexShaderPath = AssetsManager.Instance.LoadedAssets[("GameObjectShader", AssetType.VERT)].FilePath;
+        private static readonly string FragmentShaderPath = AssetsManager.Instance.LoadedAssets[("GameObjectShader", AssetType.FRAG)].FilePath;
 
         private OBJFileReader _objFileReader;
         private MeshInfo _headMeshInfo;

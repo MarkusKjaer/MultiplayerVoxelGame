@@ -8,6 +8,7 @@ using CubeEngine.Engine.Entities.Player;
 using CubeEngine.Engine.Enum;
 using CubeEngine.Engine.Server;
 using CubeEngine.Util;
+using MultiplayerVoxelGame.Game.Resources;
 using OpenTK.Mathematics;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -26,9 +27,7 @@ namespace CubeEngine.Engine
         {
             if (role == NetworkRole.Server || role == NetworkRole.Host)
             {
-                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                string parentDirectory = Directory.GetParent(baseDirectory).FullName;
-                Noise.LoadHeightmap(Path.Combine(parentDirectory, "Assets", "perlin.png"));
+                Noise.LoadHeightmap();
 
                 Server = new GameServer(tcpPort, udpPort);
                 await Server.StartAsync();
@@ -61,10 +60,7 @@ namespace CubeEngine.Engine
             camera.Instantiate();
             CurrentGameScene.ActiveCamera = camera;
 
-            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string parentDirectory = Directory.GetParent(baseDirectory).FullName;
-
-            TextureArrayManager textureArrayManagerForMap = LoadWorldTextures(parentDirectory);
+            TextureArrayManager textureArrayManagerForMap = LoadWorldTextures();
             CurrentGameScene.Map = new(32, 64, 1, textureArrayManagerForMap);
 
             PlayerRenderManager playerRenderManager = new();
@@ -75,11 +71,9 @@ namespace CubeEngine.Engine
             gameWindow.Run();
         }
 
-        private TextureArrayManager LoadWorldTextures(string parentDirectory)
+        private TextureArrayManager LoadWorldTextures()
         {
-            string pathToWorldTextures = Path.Combine(parentDirectory, "Assets", "WorldTexture", "textures.xml");
-
-            XDocument xmlDoc = XDocument.Load(pathToWorldTextures);
+            XDocument xmlDoc = XDocument.Load(AssetsManager.Instance.LoadedAssets[("Textures", AssetType.XML)].FilePath);
 
             List<string> textureNames = new List<string>();
 
@@ -88,7 +82,10 @@ namespace CubeEngine.Engine
                 string filename = texture.Element("filename")?.Value ?? "";
                 if (!string.IsNullOrEmpty(filename))
                 {
-                    textureNames.Add(Path.Combine(parentDirectory, "Assets", "WorldTexture", filename));
+                    string baseDir = AssetsManager.Instance.LoadedAssets[("Textures", AssetType.XML)].FilePath;
+                    string parentDir = Directory.GetParent(baseDir).FullName;
+
+                    textureNames.Add(Path.Combine(parentDir, filename));
                 }
             }
 
