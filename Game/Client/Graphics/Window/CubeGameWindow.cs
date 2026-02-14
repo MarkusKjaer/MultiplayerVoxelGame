@@ -92,6 +92,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             OnNewDeltaTime?.Invoke(args.Time);
 
             CurrentGameScene.Update();
+            CurrentGameScene.LateUpdate();
 
             GLActionQueue.ProcessAll();
 

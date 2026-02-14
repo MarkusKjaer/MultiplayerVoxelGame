@@ -135,6 +135,11 @@ namespace CubeEngine.Engine.Entities
 
         }
 
+        public virtual void OnLateUpdate()
+        {
+
+        }
+
         public virtual void OnUnload()
         {
 

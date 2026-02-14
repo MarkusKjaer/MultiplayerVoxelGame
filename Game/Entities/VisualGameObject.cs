@@ -31,11 +31,14 @@ namespace CubeEngine.Engine.Entities
             base.OnUpdate();
         }
 
+        public override void OnLateUpdate()
+        {
+            base.OnLateUpdate();
+        }
+
         public void OnRender()
         {
             Mesh.Render();
         }
-
-        
     }
 }

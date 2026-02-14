@@ -3,7 +3,6 @@ using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
 using CubeEngine.Engine.Network;
 using MultiplayerVoxelGame.Game.Resources;
-using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Client.World
 {
@@ -15,10 +14,6 @@ namespace CubeEngine.Engine.Client.World
 
         public Map(int chunkSize, int maxWorldHeight, int seed, TextureArrayManager textureArrayManager)
         {
-            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string parentDirectory = Directory.GetParent(baseDirectory).FullName;
-            string shadersPath = Path.Combine(parentDirectory, "Assets", "Shaders", "MapShaders");
-
             string vertShaderPath = AssetsManager.Instance.LoadedAssets[("MapChunkShader", AssetType.VERT)].FilePath;
             string fragShaderPath = AssetsManager.Instance.LoadedAssets[("MapChunkShader", AssetType.FRAG)].FilePath;
 
