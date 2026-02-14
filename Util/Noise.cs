@@ -1,4 +1,5 @@
-﻿using StbImageSharp;
+﻿using MultiplayerVoxelGame.Game.Resources;
+using StbImageSharp;
 
 namespace CubeEngine.Util
 {
@@ -6,12 +7,9 @@ namespace CubeEngine.Util
     {
         private static ImageResult? _heightmap;
 
-        public static void LoadHeightmap(string path)
+        public static void LoadHeightmap()
         {
-            if (!File.Exists(path))
-                throw new FileNotFoundException($"Heightmap image not found: {path}");
-
-            using var stream = File.OpenRead(path);
+            using var stream = File.OpenRead(AssetsManager.Instance.LoadedAssets[("Perlin", AssetType.PNG)].FilePath);
             _heightmap = ImageResult.FromStream(stream, ColorComponents.RedGreenBlue);
         }
 
