@@ -13,7 +13,7 @@ namespace MultiplayerVoxelGame.Game
     public class GameConfig
     {
         [JsonPropertyName("role")]
-        public string Role { get; set; } = "server";
+        public string Role { get; set; } = "host";
 
         [JsonPropertyName("serverIp")]
         public string ServerIp { get; set; } = "localhost";
