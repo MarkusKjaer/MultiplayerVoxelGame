@@ -24,7 +24,7 @@ namespace CubeEngine.Engine.Client.World
         {
             _chunkData = chunkData;
 
-            ChunkMesh = new(GenChunkMesh(chunkData), material);
+            ChunkMesh = new(GenChunkMesh(_chunkData), material);
         }
 
         private ChunkMeshInfo GenChunkMesh(ChunkData chunkData)
@@ -33,14 +33,14 @@ namespace CubeEngine.Engine.Client.World
             List<int> indices = [];
             int vertexOffset = 0;
 
-            for (int i = 0; i < chunkData.Voxels.GetLength(0); i++)
-                for (int j = 0; j < chunkData.Voxels.GetLength(1); j++)
-                    for (int k = 0; k < chunkData.Voxels.GetLength(2); k++)
+            for (int i = 0; i < chunkData.SizeX; i++)
+                for (int j = 0; j < chunkData.SizeY; j++)
+                    for (int k = 0; k < chunkData.SizeZ; k++)
                     {
-                        if (chunkData.Voxels[i, j, k].VoxelType == Enum.VoxelType.Empty)
+                        if (chunkData.GetVoxel(i, j, k).VoxelType == Enum.VoxelType.Empty)
                             continue;
 
-                        int textureLayer = (int)chunkData.Voxels[i, j, k].VoxelType - 1;
+                        int textureLayer = (int)chunkData.GetVoxel(i, j, k).VoxelType - 1;
                         Vector3 pos = new(i, j, k);
 
                         Vector3 v000 = pos + new Vector3(0, 0, 0);
@@ -235,11 +235,11 @@ namespace CubeEngine.Engine.Client.World
 
         public Voxel GetVoxel(int x, int y, int z)
         {
-            if (x >= 0 && x < ChunkData.Voxels.GetLength(0) &&
-                y >= 0 && y < ChunkData.Voxels.GetLength(1) &&
-                z >= 0 && z < ChunkData.Voxels.GetLength(2))
+            if (x >= 0 && x < ChunkData.SizeX &&
+                y >= 0 && y < ChunkData.SizeY &&
+                z >= 0 && z < ChunkData.SizeZ)
             {
-                return ChunkData.Voxels[x, y, z];
+                return ChunkData.GetVoxel(x, y, z);
             }
             else
             {
@@ -266,11 +266,6 @@ namespace CubeEngine.Engine.Client.World
         public void Remove()
         {
             ChunkMesh.Dispose();
-        }
-
-        public void UpdateChunk()
-        {
-            ChunkMesh.UpdateMesh(GenChunkMesh(_chunkData));
         }
     }
 }

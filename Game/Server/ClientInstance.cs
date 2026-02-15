@@ -150,9 +150,9 @@ namespace CubeEngine.Engine.Server
             foreach (var chunk in map.CurrentChunks)
             {
                 var data = chunk.Value.ChunkData;
-                int sx = data.Voxels.GetLength(0);
-                int sy = data.Voxels.GetLength(1);
-                int sz = data.Voxels.GetLength(2);
+                int sx = data.SizeX;
+                int sy = data.SizeY;
+                int sz = data.SizeZ;
 
                 Vector2 origin = data.Position;
                 int cx = x - (int)origin.X;
@@ -162,7 +162,7 @@ namespace CubeEngine.Engine.Server
                     cx >= sx || cz >= sz) continue;
 
                 if (y >= 0 && y < sy)
-                    return data.Voxels[cx, y, cz].VoxelType != Client.World.Enum.VoxelType.Empty;
+                    return data.GetVoxel(cx, y, cz).VoxelType != Client.World.Enum.VoxelType.Empty;
             }
 
             return false;

@@ -142,9 +142,9 @@ namespace CubeEngine.Engine.Entities.Player
                 int lx = x - chunkX;
                 int lz = z - chunkZ;
 
-                if (y >= 0 && y < data.Voxels.GetLength(1))
+                if (y >= 0 && y < data.SizeY)
                 {
-                    return data.Voxels[lx, y, lz].VoxelType != Client.World.Enum.VoxelType.Empty;
+                    return data.GetVoxel(lx, y, lz).VoxelType != Client.World.Enum.VoxelType.Empty;
                 }
             }
 

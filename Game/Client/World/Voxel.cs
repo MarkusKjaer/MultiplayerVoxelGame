@@ -5,7 +5,6 @@ namespace CubeEngine.Engine.Client.World
 {
     public struct Voxel
     {
-        public Vector3 Position;
         public VoxelType VoxelType;
     }
 }

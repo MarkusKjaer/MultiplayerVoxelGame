@@ -94,7 +94,7 @@ namespace CubeEngine.Engine.Server
             if (y < 0 || y >= MaxWorldHeight)
                 return;
 
-            chunk.ChunkData.Voxels[cx, y, cz].VoxelType = type;
+            chunk.ChunkData.SetVoxel(cx, y, cz, new Voxel { VoxelType = type });
         }
 
         public void BroadcastChunkUpdate(Vector3i blockPos)

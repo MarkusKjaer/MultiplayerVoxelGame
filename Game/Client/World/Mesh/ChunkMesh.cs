@@ -48,14 +48,6 @@ namespace CubeEngine.Engine.Client.World.Mesh
 
             GL.BindVertexArray(vertexArray.VertexArrayHandle);
 
-            Console.WriteLine($"VAO handle={vertexArray.VertexArrayHandle}, IndexCount={_meshInfo.IndexCount}, IndexBufferHandle={indexBuffer.IndexBufferHandle}");
-            Console.WriteLine($"IsVAO={GL.IsVertexArray(vertexArray.VertexArrayHandle)}, IsIndexBuffer={GL.IsBuffer(indexBuffer.IndexBufferHandle)}");
-            int boundVAO = GL.GetInteger(GetPName.VertexArrayBinding);
-            int boundElementArray = GL.GetInteger(GetPName.ElementArrayBufferBinding);
-            Console.WriteLine($"GL bound VAO={boundVAO}, bound ELEMENT_ARRAY_BUFFER={boundElementArray}");
-            var err = GL.GetError();
-            Console.WriteLine($"GL.GetError before draw = {err}");
-
             GL.DrawElements(PrimitiveType.Triangles, _meshInfo.IndexCount, DrawElementsType.UnsignedInt, 0);
         }
     }
