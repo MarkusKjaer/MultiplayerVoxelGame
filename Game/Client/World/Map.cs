@@ -5,6 +5,7 @@ using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
 using CubeEngine.Engine.Network;
 using MultiplayerVoxelGame.Game.Resources;
 using System.Collections.Generic;
+using CubeEngine.Engine.Client.World.Enum;
 
 namespace CubeEngine.Engine.Client.World
 {
@@ -78,6 +79,26 @@ namespace CubeEngine.Engine.Client.World
                     chunk.Render();
                 }
             }
+        }
+
+        public Voxel GetVoxelGlobal(int globalX, int globalY, int globalZ)
+        {
+            Vector2 chunkPos = new Vector2(
+                (float)Math.Floor(globalX / 16f),
+                (float)Math.Floor(globalZ / 16f)
+            );
+            lock (_chunkLock)
+            {
+                if (CurrentChunks.TryGetValue(chunkPos, out var chunk))
+                {
+                    int localX = globalX - (int)chunkPos.X;
+                    int localY = globalY;
+                    int localZ = globalZ - (int)chunkPos.Y;
+                    return chunk.GetVoxel(localX, localY, localZ);
+                }
+            }
+            return new Voxel { VoxelType = VoxelType.Empty };
+
         }
     }
 }
