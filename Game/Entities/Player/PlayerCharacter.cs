@@ -2,6 +2,7 @@
 using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Network;
 using CubeEngine.Util;
+using MultiplayerVoxelGame.Util.Settings;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -15,7 +16,7 @@ namespace CubeEngine.Engine.Entities.Player
 
         private float _chunkCheckCooldown = 0f;
         private const float ChunkCheckInterval = 5f;
-        private const int ChunkRadius = 1;
+        private const int ChunkRadius = 20;
 
         public PlayerCharacter(Vector3 position)
         {
@@ -107,15 +108,15 @@ namespace CubeEngine.Engine.Entities.Player
             var map = CubeGameWindow.Instance.CurrentGameScene.Map;
             if (map == null) return;
 
-            int playerChunkX = (int)MathF.Floor(Position.X / 16);
-            int playerChunkZ = (int)MathF.Floor(Position.Z / 16);
+            int playerChunkX = (int)MathF.Floor(Position.X / ChunkSettings.Width);
+            int playerChunkZ = (int)MathF.Floor(Position.Z / ChunkSettings.Width);
 
             for (int dx = -ChunkRadius; dx <= ChunkRadius; dx++)
             {
                 for (int dz = -ChunkRadius; dz <= ChunkRadius; dz++)
                 {
                     Vector2 chunkCoords = new(playerChunkX + dx, playerChunkZ + dz);
-                    Vector2 worldPos = chunkCoords * 16;
+                    Vector2 worldPos = chunkCoords * ChunkSettings.Width;
 
                     if (!map.CurrentChunks.ContainsKey(worldPos))
                     {
@@ -131,8 +132,8 @@ namespace CubeEngine.Engine.Entities.Player
             var map = CubeGameWindow.Instance.CurrentGameScene.Map;
             if (map == null) return false;
 
-            int chunkX = (int)MathF.Floor(x / 16f) * 16;
-            int chunkZ = (int)MathF.Floor(z / 16f) * 16;
+            int chunkX = (int)MathF.Floor(x / (float)ChunkSettings.Width) * ChunkSettings.Width;
+            int chunkZ = (int)MathF.Floor(z / (float)ChunkSettings.Width) * ChunkSettings.Width;
             Vector2 chunkKey = new(chunkX, chunkZ);
 
             if (map.CurrentChunks.TryGetValue(chunkKey, out var chunk))

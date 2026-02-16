@@ -1,11 +1,12 @@
-﻿using OpenTK.Mathematics;
-using CubeEngine.Engine.Client.Graphics;
+﻿using CubeEngine.Engine.Client.Graphics;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
+using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Engine.Network;
 using MultiplayerVoxelGame.Game.Resources;
+using MultiplayerVoxelGame.Util.Settings;
+using OpenTK.Mathematics;
 using System.Collections.Generic;
-using CubeEngine.Engine.Client.World.Enum;
 
 namespace CubeEngine.Engine.Client.World
 {
@@ -83,22 +84,33 @@ namespace CubeEngine.Engine.Client.World
 
         public Voxel GetVoxelGlobal(int globalX, int globalY, int globalZ)
         {
-            Vector2 chunkPos = new Vector2(
-                (float)Math.Floor(globalX / 16f),
-                (float)Math.Floor(globalZ / 16f)
-            );
+            const int CHUNK_SIZE = ChunkSettings.Width;
+
+            int chunkX = (int)Math.Floor(globalX / (float)CHUNK_SIZE);
+            int chunkZ = (int)Math.Floor(globalZ / (float)CHUNK_SIZE);
+
+            int localX = globalX - chunkX * CHUNK_SIZE;
+            int localZ = globalZ - chunkZ * CHUNK_SIZE;
+            int localY = globalY;
+
+            if (localX < 0 || localX >= CHUNK_SIZE ||
+                localZ < 0 || localZ >= CHUNK_SIZE ||
+                localY < 0 || localY >= 80)
+            {
+                return new Voxel { VoxelType = VoxelType.Empty };
+            }
+
+            Vector2 chunkPos = new Vector2(chunkX, chunkZ);
+
             lock (_chunkLock)
             {
                 if (CurrentChunks.TryGetValue(chunkPos, out var chunk))
                 {
-                    int localX = globalX - (int)chunkPos.X;
-                    int localY = globalY;
-                    int localZ = globalZ - (int)chunkPos.Y;
-                    return chunk.GetVoxel(localX, localY, localZ);
+                    return chunk.ChunkData.GetVoxel(localX, localY, localZ);
                 }
             }
-            return new Voxel { VoxelType = VoxelType.Empty };
 
+            return new Voxel { VoxelType = VoxelType.Empty };
         }
     }
 }

@@ -9,6 +9,14 @@ namespace CubeEngine.Engine.Client.World.Mesh
     {
         public ChunkMesh(ChunkMeshInfo meshInfo, Material material) : base(meshInfo, material)
         {
+            string vertexShaderCode = File.ReadAllText(_material.VertShaderFileLocation);
+            string pixelShaderCode = File.ReadAllText(_material.FragShaderFileLocation);
+            shaderProgram = new(vertexShaderCode, pixelShaderCode);
+
+            _meshInfo = meshInfo;
+            if (_meshInfo.VertexCount == 0 || _meshInfo.IndexCount == 0)
+                return;
+
             vertexBuffer = new VertexBuffer(VertexPositionNormalTextureLayerAO.vertexInfo, _meshInfo.VertexCount, true);
             vertexBuffer.SetData(_meshInfo.Vertices, _meshInfo.VertexCount);
 
@@ -16,11 +24,6 @@ namespace CubeEngine.Engine.Client.World.Mesh
             indexBuffer.SetData(_meshInfo.Indices, _meshInfo.IndexCount);
 
             vertexArray = new VertexArray(vertexBuffer, indexBuffer);
-
-            string vertexShaderCode = File.ReadAllText(_material.VertShaderFileLocation);
-            string pixelShaderCode = File.ReadAllText(_material.FragShaderFileLocation);
-
-            shaderProgram = new(vertexShaderCode, pixelShaderCode);
         }
 
         public void UpdateMesh(ChunkMeshInfo newMeshInfo)
@@ -31,6 +34,9 @@ namespace CubeEngine.Engine.Client.World.Mesh
 
             _meshInfo = newMeshInfo;
 
+            if (_meshInfo.VertexCount == 0 || _meshInfo.IndexCount == 0)
+                return; 
+
             vertexBuffer = new VertexBuffer(VertexPositionNormalTextureLayerAO.vertexInfo, _meshInfo.VertexCount, true);
             vertexBuffer.SetData(_meshInfo.Vertices, _meshInfo.VertexCount);
 
@@ -40,20 +46,32 @@ namespace CubeEngine.Engine.Client.World.Mesh
             vertexArray = new VertexArray(vertexBuffer, indexBuffer);
         }
 
+        public override void Update(Camera camera, int windowWidth, int windowheight)
+        {
+            if (_meshInfo.IndexCount == 0)
+                return;
+
+            base.Update(camera, windowWidth, windowheight);
+        }
+
         public override void Render()
         {
+            if (_meshInfo.IndexCount == 0)
+                return;
+
             base.Render();
 
             GL.BindTexture(TextureTarget.Texture2DArray, _material.TextureManager.TextureID);
-
             GL.BindVertexArray(vertexArray.VertexArrayHandle);
-
             GL.DrawElements(PrimitiveType.Triangles, _meshInfo.IndexCount, DrawElementsType.UnsignedInt, 0);
         }
     }
 
     public readonly struct ChunkMeshInfo
     {
+        public static readonly ChunkMeshInfo Empty =
+            new ChunkMeshInfo(Array.Empty<VertexPositionNormalTextureLayerAO>(),
+                              Array.Empty<int>());
         public readonly int VertexCount { get; }
         public readonly int IndexCount { get; }
         public readonly VertexPositionNormalTextureLayerAO[] Vertices { get; }

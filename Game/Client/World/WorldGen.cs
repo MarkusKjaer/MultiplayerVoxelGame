@@ -47,8 +47,15 @@ namespace CubeEngine.Engine.Client.World
                     float worldX = chunkIndex.X * chunkSize + x;
                     float worldZ = chunkIndex.Y * chunkSize + z;
 
-                    float height = Noise.ImageHeight(worldX, worldZ) * _maxWorldHeight;
-                    int groundHeight = (int)Math.Clamp(height, 0, _maxWorldHeight - 1);
+                    float scale = 0.01f;
+
+                    float height = Noise.ImageHeight(
+                        worldX * scale,
+                        worldZ * scale
+                    ) * _maxWorldHeight;
+
+                    int groundHeight = (int)MathF.Round(height);
+                    groundHeight = Math.Clamp(groundHeight, 0, _maxWorldHeight - 1);
 
                     for (int y = 0; y < _maxWorldHeight; y++)
                     {

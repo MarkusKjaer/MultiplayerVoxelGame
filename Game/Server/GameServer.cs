@@ -1,4 +1,5 @@
 ﻿using CubeEngine.Engine.Network;
+using MultiplayerVoxelGame.Util.Settings;
 using System.Net;
 using System.Net.Sockets;
 
@@ -8,8 +9,8 @@ namespace CubeEngine.Engine.Server
     {
         public static GameServer? Instance { get; private set; }
 
-        private const int CHUNK_SIZE = 16;
-        private const int CHUNK_HEIGHT = 64;
+        private const int CHUNK_SIZE = ChunkSettings.Width;
+        private const int CHUNK_HEIGHT = ChunkSettings.Height;
         private const int MAP_SEED = 1;
 
         public event Action<IPEndPoint, Packet>? ClientMessage;
@@ -119,7 +120,7 @@ namespace CubeEngine.Engine.Server
                     TcpClient tcpClient = await _tcpListener!.AcceptTcpClientAsync();
                     var clientInstance = new ClientInstance(tcpClient);
 
-                    clientInstance.Setup(new(80, 60, 80));
+                    clientInstance.Setup(new(0, 60, 0));
 
                     ClientInstances[tcpClient] = clientInstance;
 

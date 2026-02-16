@@ -2,13 +2,20 @@
 using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Engine.Network;
 using OpenTK.Mathematics;
+using System.Collections.Concurrent;
 using System.Net;
 
 namespace CubeEngine.Engine.Server
 {
     public class ServerMap
     {
-        public Dictionary<Vector2, ServerChunk> CurrentChunks = [];
+        public class ChunkInfo
+        {
+            public required ServerChunk ServerChunk;
+            public required Object Lock;
+        }
+
+        public ConcurrentDictionary<Vector2, ChunkInfo> CurrentChunks = new();
 
         private WorldGen _worldGen;
 
@@ -56,33 +63,50 @@ namespace CubeEngine.Engine.Server
             switch (packet)
             {
                 case ChunkRequestPacket req:
-                    try
-                    {
-                        Vector2 chunkPos = req.ChunkPos;
+                    Vector2 chunkPos = req.ChunkPos;
+                    SendBackChunk(client, chunkPos);
+                    break;  
+            }
+        }
 
-                        if (!CurrentChunks.TryGetValue(chunkPos, out var serverChunk))
-                        {
-                            var chunksToGen = new List<Vector2> { chunkPos };
-                            var newChunks = _worldGen.GenPartOfWorld(ChunkSize, MaxWorldHeight, chunksToGen);
+        private void SendBackChunk(ClientInstance client, Vector2 chunkPos)
+        {
+            var chunkInfo = CurrentChunks.GetOrAdd(chunkPos, pos =>
+            {
+                return new ChunkInfo
+                {
+                    ServerChunk = null!, 
+                    Lock = new object()
+                };
+            });
 
-                            if (newChunks.Count > 0)
-                            {
-                                var newChunkData = newChunks[0];
-                                serverChunk = new ServerChunk(newChunkData);
-                                CurrentChunks.Add(chunkPos, serverChunk);
+            if (chunkInfo == null)
+                return;
 
-                                Console.WriteLine($"Generated new chunk at {chunkPos.X}, {chunkPos.Y}");
-                            }
-                        }
+            lock (chunkInfo.Lock)
+            {
+                if (chunkInfo.ServerChunk == null)
+                {
+                    var chunksToGen = new List<Vector2> { chunkPos };
+                    var newChunks = _worldGen.GenPartOfWorld(ChunkSize, MaxWorldHeight, chunksToGen);
 
-                        ChunkInfoPacket response = new(serverChunk.ChunkData, ChunkSize, MaxWorldHeight);
-                        _ = GameServer.Instance.SendTcpPacket(client.TcpClient, response);
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e);
-                    }
-                    break;
+                    if (newChunks.Count == 0)
+                        throw new Exception("Chunk generation failed");
+
+                    chunkInfo.ServerChunk = new ServerChunk(newChunks[0]);
+
+                    Console.WriteLine($"Generated new chunk at {chunkPos.X}, {chunkPos.Y}");
+                }
+            }
+
+            try
+            {
+                ChunkInfoPacket response = new(chunkInfo.ServerChunk.ChunkData, ChunkSize, MaxWorldHeight);
+                _ = GameServer.Instance.SendTcpPacket(client.TcpClient, response);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
             }
         }
 
@@ -114,14 +138,17 @@ namespace CubeEngine.Engine.Server
         {
             cx = 0;
             cz = 0;
+            chunk = null;
 
             int chunkX = (int)MathF.Floor(x / (float)ChunkSize);
             int chunkZ = (int)MathF.Floor(z / (float)ChunkSize);
 
             Vector2 chunkKey = new(chunkX, chunkZ);
 
-            if (!CurrentChunks.TryGetValue(chunkKey, out chunk))
+            if (!CurrentChunks.TryGetValue(chunkKey, out ChunkInfo chunkInfo))
                 return false;
+
+            chunk = chunkInfo.ServerChunk;
 
             cx = Mod(x, ChunkSize);
             cz = Mod(z, ChunkSize);

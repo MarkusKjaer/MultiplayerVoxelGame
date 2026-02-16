@@ -149,7 +149,7 @@ namespace CubeEngine.Engine.Server
 
             foreach (var chunk in map.CurrentChunks)
             {
-                var data = chunk.Value.ChunkData;
+                var data = chunk.Value.ServerChunk.ChunkData;
                 int sx = data.SizeX;
                 int sy = data.SizeY;
                 int sz = data.SizeZ;

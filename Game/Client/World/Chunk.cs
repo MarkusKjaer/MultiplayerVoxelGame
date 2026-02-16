@@ -1,7 +1,8 @@
-﻿using OpenTK.Mathematics;
+﻿using CubeEngine.Engine.Client.Graphics;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Client.World.Mesh;
+using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Client.World
 {
@@ -10,24 +11,26 @@ namespace CubeEngine.Engine.Client.World
         private ChunkData _chunkData;
         public ChunkMesh ChunkMesh { get; private set; }
 
+        private int _meshVersion = 0;
+
         #region MeshData
 
         private static readonly Vector3[][] FaceVertices = {
-            new Vector3[] { new(0,0,1), new(1,0,1), new(0,1,1), new(1,1,1) }, // Z+
-            new Vector3[] { new(0,0,0), new(0,1,0), new(1,0,0), new(1,1,0) }, // Z-
-            new Vector3[] { new(1,0,0), new(1,1,0), new(1,0,1), new(1,1,1) }, // X+
-            new Vector3[] { new(0,0,0), new(0,1,0), new(0,0,1), new(0,1,1) }, // X-
-            new Vector3[] { new(0,1,0), new(0,1,1), new(1,1,0), new(1,1,1) }, // Y+
-            new Vector3[] { new(0,0,0), new(0,0,1), new(1,0,0), new(1,0,1) }  // Y-
+            [new(0,0,1), new(1,0,1), new(0,1,1), new(1,1,1)], // Z+
+            [new(0,0,0), new(0,1,0), new(1,0,0), new(1,1,0)], // Z-
+            [new(1,0,0), new(1,1,0), new(1,0,1), new(1,1,1)], // X+
+            [new(0,0,0), new(0,1,0), new(0,0,1), new(0,1,1)], // X-
+            [new(0,1,0), new(0,1,1), new(1,1,0), new(1,1,1)], // Y+
+            [new(0,0,0), new(0,0,1), new(1,0,0), new(1,0,1)]  // Y-
         };
 
         private static readonly Vector2[][] FaceUVs = {
-            new Vector2[] { new(0,0), new(1,0), new(0,1), new(1,1) }, // Z+
-            new Vector2[] { new(0,0), new(0,1), new(1,0), new(1,1) }, // Z-
-            new Vector2[] { new(0,0), new(0,1), new(1,0), new(1,1) }, // X+
-            new Vector2[] { new(0,0), new(1,0), new(0,1), new(1,1) }, // X-
-            new Vector2[] { new(0,0), new(1,0), new(0,1), new(1,1) }, // Y+
-            new Vector2[] { new(0,0), new(1,0), new(0,1), new(1,1) }  // Y-
+            [new(0,0), new(1,0), new(0,1), new(1,1)], // Z+
+            [new(0,0), new(0,1), new(1,0), new(1,1)], // Z-
+            [new(0,0), new(0,1), new(1,0), new(1,1)], // X+
+            [new(0,0), new(1,0), new(0,1), new(1,1)], // X-
+            [new(0,0), new(1,0), new(0,1), new(1,1)], // Y+
+            [new(0,0), new(1,0), new(0,1), new(1,1)]  // Y-
         };
 
         private static readonly Vector3[] FaceNormals = {
@@ -56,7 +59,7 @@ namespace CubeEngine.Engine.Client.World
             set
             {
                 _chunkData = value;
-                ChunkMesh.UpdateMesh(GenChunkMesh(_chunkData));
+                RegenerateMeshAsync();
             }
         }
 
@@ -64,7 +67,29 @@ namespace CubeEngine.Engine.Client.World
         {
             _chunkData = chunkData;
 
-            ChunkMesh = new(GenChunkMesh(_chunkData), material);
+            ChunkMesh = new ChunkMesh(ChunkMeshInfo.Empty, material);
+
+            RegenerateMeshAsync();
+        }
+
+        public Task<ChunkMeshInfo> GenerateMeshAsync()
+        {
+            var dataSnapshot = _chunkData; 
+            return Task.Run(() => GenChunkMesh(dataSnapshot));
+        }
+
+        public async void RegenerateMeshAsync()
+        {
+            int version = ++_meshVersion;
+            var dataSnapshot = _chunkData;
+
+            var meshData = await Task.Run(() => GenChunkMesh(dataSnapshot));
+
+            GLActionQueue.Enqueue(() =>
+            {
+                if (version != _meshVersion) return; 
+                ChunkMesh.UpdateMesh(meshData);
+            });
         }
 
         private ChunkMeshInfo GenChunkMesh(ChunkData chunkData)
@@ -77,10 +102,11 @@ namespace CubeEngine.Engine.Client.World
                 for (int j = 0; j < chunkData.SizeY; j++)
                     for (int k = 0; k < chunkData.SizeZ; k++)
                     {
-                        if (chunkData.GetVoxel(i, j, k).VoxelType == Enum.VoxelType.Empty)
+                        var voxel = chunkData.GetVoxel(i, j, k);
+                        if (voxel.VoxelType == Enum.VoxelType.Empty)
                             continue;
 
-                        int textureLayer = (int)chunkData.GetVoxel(i, j, k).VoxelType - 1;
+                        int textureLayer = (int)voxel.VoxelType - 1;
                         Vector3 pos = new(i, j, k);
 
                         // 0: Z+, 1: Z-, 2: X+, 3: X-, 4: Y+, 5: Y-

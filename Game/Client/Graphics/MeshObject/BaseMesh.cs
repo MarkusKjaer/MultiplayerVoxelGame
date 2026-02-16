@@ -52,7 +52,7 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
             Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(
                 MathHelper.DegreesToRadians(90.0f),
                 windowWidth / (float)windowheight,
-                0.1f, 100.0f
+                0.1f, 1000.0f
             );
 
             shaderProgram.SetUnitform("model", Model);
@@ -72,7 +72,7 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
 
         ~BaseMesh()
         {
-            Dispose();
+            GLActionQueue.Enqueue(() => Dispose());
         }
 
         public void Dispose()
