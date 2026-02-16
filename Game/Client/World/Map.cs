@@ -49,14 +49,30 @@ namespace CubeEngine.Engine.Client.World
         {
             lock (_chunkLock)
             {
+                Chunk newChunk;
                 if (CurrentChunks.TryGetValue(chunkData.Position, out var existingChunk))
                 {
-                    existingChunk.ChunkData = chunkData;
+                    existingChunk.ChunkData = chunkData; 
+                    newChunk = existingChunk;
                 }
                 else
                 {
-                    CurrentChunks.Add(chunkData.Position, new Chunk(chunkData, _material));
+                    newChunk = new Chunk(chunkData, _material); 
+                    CurrentChunks.Add(chunkData.Position, newChunk);
                 }
+
+                RefreshNeighbor(chunkData.Position + new Vector2(ChunkSettings.Width, 0));  // East (+X)
+                RefreshNeighbor(chunkData.Position + new Vector2(-ChunkSettings.Width, 0)); // West (-X)
+                RefreshNeighbor(chunkData.Position + new Vector2(0, ChunkSettings.Width));  // North (+Z)
+                RefreshNeighbor(chunkData.Position + new Vector2(0, -ChunkSettings.Width)); // South (-Z)
+            }
+        }
+
+        private void RefreshNeighbor(Vector2 position)
+        {
+            if (CurrentChunks.TryGetValue(position, out var neighbor))
+            {
+                neighbor.RegenerateMeshAsync();
             }
         }
 

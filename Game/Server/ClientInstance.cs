@@ -1,7 +1,9 @@
-﻿using CubeEngine.Engine.Client.World.Enum;
+﻿using CubeEngine.Engine.Client.Graphics.Window;
+using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Engine.Entities;
 using CubeEngine.Engine.Network;
 using CubeEngine.Engine.Util;
+using MultiplayerVoxelGame.Util.Settings;
 using OpenTK.Mathematics;
 using System.Net;
 using System.Net.Sockets;
@@ -147,22 +149,20 @@ namespace CubeEngine.Engine.Server
             var map = GameServer.Instance.ServerMap;
             if (map == null) return false;
 
-            foreach (var chunk in map.CurrentChunks)
+            int chunkX = (int)MathF.Floor(x / (float)ChunkSettings.Width);
+            int chunkZ = (int)MathF.Floor(z / (float)ChunkSettings.Width);
+
+            if (map.CurrentChunks.TryGetValue(new Vector2(chunkX, chunkZ), out var chunk))
             {
-                var data = chunk.Value.ServerChunk.ChunkData;
-                int sx = data.SizeX;
-                int sy = data.SizeY;
-                int sz = data.SizeZ;
+                var data = chunk.ServerChunk;
 
-                Vector2 origin = data.Position;
-                int cx = x - (int)origin.X;
-                int cz = z - (int)origin.Y;
+                int lx = x - chunkX * ChunkSettings.Width;
+                int lz = z - chunkZ * ChunkSettings.Width;
 
-                if (cx < 0 || cz < 0 ||
-                    cx >= sx || cz >= sz) continue;
-
-                if (y >= 0 && y < sy)
-                    return data.GetVoxel(cx, y, cz).VoxelType != Client.World.Enum.VoxelType.Empty;
+                if (y >= 0 && y < data.ChunkData.SizeY)
+                {
+                    return data.GetVoxel(lx, y, lz).VoxelType != VoxelType.Empty;
+                }
             }
 
             return false;

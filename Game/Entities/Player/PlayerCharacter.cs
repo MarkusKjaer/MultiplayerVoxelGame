@@ -16,7 +16,7 @@ namespace CubeEngine.Engine.Entities.Player
 
         private float _chunkCheckCooldown = 0f;
         private const float ChunkCheckInterval = 5f;
-        private const int ChunkRadius = 20;
+        private const int ChunkRadius = 5;
 
         public PlayerCharacter(Vector3 position)
         {

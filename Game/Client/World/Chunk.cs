@@ -63,6 +63,7 @@ namespace CubeEngine.Engine.Client.World
             }
         }
 
+
         public Chunk(ChunkData chunkData, Material material)
         {
             _chunkData = chunkData;
