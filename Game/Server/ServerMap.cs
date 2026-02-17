@@ -27,15 +27,6 @@ namespace CubeEngine.Engine.Server
             ChunkSize = chunkSize;
             MaxWorldHeight = maxWorldHeight;
 
-            //List<Vector2> chunksToGen =
-            //[
-            //    new(0, 0), new(1, 0), new(2, 0), new(3, 0), new(4, 0),
-            //    new(0, 1), new(1, 1), new(2, 1), new(3, 1), new(4, 1),
-            //    new(0, 2), new(1, 2), new(2, 2), new(3, 2), new(4, 2),
-            //    new(0, 3), new(1, 3), new(2, 3), new(3, 3), new(4, 3),
-            //    new(0, 4), new(1, 4), new(2, 4), new(3, 4), new(4, 4),
-            //];
-
             if (seed == 0)
             {
                 _worldGen = new WorldGen();
@@ -44,13 +35,6 @@ namespace CubeEngine.Engine.Server
             {
                 _worldGen = new WorldGen(seed);
             }
-
-            //var newChunks = _worldGen.GenPartOfWorld(chunkSize, maxWorldHeight, chunksToGen);
-
-            //for (int i = 0; i < newChunks.Count; i++)
-            //{
-            //    CurrentChunks.Add(newChunks[i].Position / ChunkSize, new ServerChunk(newChunks[i]));
-            //}
 
             GameServer.Instance.ClientMessage += OnClientMessage;
         }

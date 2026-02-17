@@ -16,16 +16,16 @@ namespace CubeEngine.Engine.Entities.Player
 
         private float _chunkCheckCooldown = 0f;
         private const float ChunkCheckInterval = 5f;
-        private const int ChunkRadius = 5;
+        private const int ChunkRadius = PlayerSettings.MaxChunkLoadDistance;
 
         public PlayerCharacter(Vector3 position)
         {
             Position = position;
 
             _movement = new MovementController(
-                moveSpeed: 2f,
-                gravity: -9.81f,
-                jumpForce: 5f,
+                moveSpeed: PlayerSettings.moveSpeed,
+                gravity: PlayerSettings.gravity,
+                jumpForce: PlayerSettings.jumpForce,
                 playerSize: PlayerSize
             );
 

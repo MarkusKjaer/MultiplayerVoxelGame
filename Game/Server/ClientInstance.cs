@@ -77,9 +77,9 @@ namespace CubeEngine.Engine.Server
             EndPoint = (IPEndPoint)client.Client.RemoteEndPoint!;
 
             _movement = new MovementController(
-                moveSpeed: 3f,
-                gravity: -9.81f,
-                jumpForce: 6f,
+                moveSpeed: PlayerSettings.moveSpeed,
+                gravity: PlayerSettings.gravity,
+                jumpForce: PlayerSettings.jumpForce,
                 playerSize: new Vector3(PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_WIDTH)
             );
 

@@ -1,5 +1,6 @@
 ﻿using CubeEngine.Engine.Network;
 using MultiplayerVoxelGame.Util.Settings;
+using OpenTK.Mathematics;
 using System.Net;
 using System.Net.Sockets;
 
@@ -38,7 +39,8 @@ namespace CubeEngine.Engine.Server
 
             Instance = this;
 
-            ServerMap = new(CHUNK_SIZE, CHUNK_HEIGHT, MAP_SEED);
+            string savePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Saves");
+            ServerMap = new ServerMap(CHUNK_SIZE, CHUNK_HEIGHT, MAP_SEED);
 
             ClientMessage += OnClientMessage;
         }
@@ -235,6 +237,27 @@ namespace CubeEngine.Engine.Server
             {
                 client.Update();
             }
+        }
+
+        #endregion
+
+        #region Map
+
+        private void DeloadChunks(List<ClientInstance> clientInstances, ServerMap serverMap)
+        {
+            List<Vector2> chunksToDeload = new();
+            List<Vector2> playerChunkPositions = clientInstances.Select(ci =>
+            {
+                int chunkX = (int)MathF.Floor(ci.Position.X / CHUNK_SIZE);
+                int chunkZ = (int)MathF.Floor(ci.Position.Z / CHUNK_SIZE);
+                return new Vector2(chunkX, chunkZ);
+            }).ToList();
+
+            foreach (var item in playerChunkPositions)
+            {
+                
+            }
+
         }
 
         #endregion
