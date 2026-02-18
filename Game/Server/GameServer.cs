@@ -31,13 +31,24 @@ namespace CubeEngine.Engine.Server
 
         public GameServer(int tcpPort, int udpPort)
         {
-            _tcpListener = new TcpListener(IPAddress.Any, tcpPort);
-            _udpServer = new UdpClient(udpPort);
+            Instance = this;
 
-            Console.WriteLine($"UDP Server started on port {udpPort}");
+            // TCP setup 
+            _tcpListener = new TcpListener(IPAddress.Any, tcpPort);
+            _tcpListener.Start();
             Console.WriteLine($"TCP Server started on port {tcpPort}");
 
-            Instance = this;
+            // UDP setup 
+            _udpServer = new UdpClient(); // create unbound socket
+
+            _udpServer.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+            const int SIO_UDP_CONNRESET = -1744830452;
+            _udpServer.Client.IOControl(SIO_UDP_CONNRESET, new byte[] { 0 }, null);
+
+            // Bind to desired port
+            _udpServer.Client.Bind(new IPEndPoint(IPAddress.Any, udpPort));
+            Console.WriteLine($"UDP Server started on port {udpPort}");
 
             string savePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Saves");
             ServerMap = new ServerMap(CHUNK_SIZE, CHUNK_HEIGHT, MAP_SEED);
@@ -92,19 +103,37 @@ namespace CubeEngine.Engine.Server
                 try
                 {
                     UdpReceiveResult result = await _udpServer.ReceiveAsync();
-                    byte[] buffer = result.Buffer;
+                    Packet packet = Packet.Deserialize(result.Buffer);
 
-                    Packet packet = Packet.Deserialize(buffer);
+                    // Register first packet from client
+                    if (!ClientsByEndpoint.ContainsKey(result.RemoteEndPoint))
+                    {
+                        var client = ClientInstances.Values
+                            .FirstOrDefault(c => c.TcpClient.Client.RemoteEndPoint is IPEndPoint ep &&
+                                                 ep.Address.Equals(result.RemoteEndPoint.Address));
+                        if (client != null)
+                        {
+                            client.UdpEndPoint = result.RemoteEndPoint;
+                            ClientsByEndpoint[result.RemoteEndPoint] = client;
+                            Console.WriteLine($"Registered UDP client: {client.Username} at {result.RemoteEndPoint}");
+                        }
+                    }
+
                     ClientMessage?.Invoke(result.RemoteEndPoint, packet);
                 }
-                catch (Exception ex) { Console.WriteLine($"UDP Server error: {ex.Message}"); }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"UDP Server error: {ex.Message}");
+                }
             }
         }
 
-        public void SendUdpMessage(IPEndPoint client, Packet packet)
+        public void SendUdpMessage(ClientInstance client, Packet packet)
         {
+            if (client.UdpEndPoint == null) return;
+
             byte[] data = packet.Serialize();
-            _udpServer.Send(data, data.Length, client);
+            _udpServer.Send(data, data.Length, client.UdpEndPoint);
         }
 
         #endregion
@@ -184,14 +213,30 @@ namespace CubeEngine.Engine.Server
 
         public async Task SendTcpPacket(TcpClient client, Packet packet)
         {
-            if (client.Connected)
+            if (!client.Connected || !ClientInstances.TryGetValue(client, out var instance))
+                return;
+
+            await instance.TcpSendLock.WaitAsync();
+            try
             {
                 byte[] data = packet.Serialize();
                 byte[] lengthPrefix = BitConverter.GetBytes(data.Length);
 
-                await client.GetStream().WriteAsync(lengthPrefix, 0, lengthPrefix.Length);
-                await client.GetStream().WriteAsync(data, 0, data.Length);
-                await client.GetStream().FlushAsync();
+                byte[] fullPacket = new byte[lengthPrefix.Length + data.Length];
+                Buffer.BlockCopy(lengthPrefix, 0, fullPacket, 0, lengthPrefix.Length);
+                Buffer.BlockCopy(data, 0, fullPacket, lengthPrefix.Length, data.Length);
+
+                NetworkStream stream = client.GetStream();
+                await stream.WriteAsync(fullPacket, 0, fullPacket.Length);
+                await stream.FlushAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending TCP to {instance.Username}: {ex.Message}");
+            }
+            finally
+            {
+                instance.TcpSendLock.Release();
             }
         }
 
@@ -203,16 +248,26 @@ namespace CubeEngine.Engine.Server
         {
             int delay = 1000 / _targetTick;
 
+            const int tcpSendIntervalTicks = 60; 
+            int tickCount = 0;
+
             while (_running)
             {
                 try
                 {
                     TickUpdate();
-                    SendPlayerInfoTick();
+                    SendPlayerInfoTick(); 
+
+                    if (tickCount % tcpSendIntervalTicks == 0)
+                    {
+                        SendPlayerInfoTickTCP();
+                    }
+
+                    tickCount++;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error sending UDP tick: {ex.Message}");
+                    Console.WriteLine($"Error during tick: {ex.Message}");
                 }
 
                 await Task.Delay(delay);
@@ -221,12 +276,31 @@ namespace CubeEngine.Engine.Server
 
         private void SendPlayerInfoTick()
         {
-            foreach (var client in ClientInstances)
+            foreach (var client in ClientInstances.Values)
             {
-                foreach (var clientInfoToSend in ClientInstances)
+                foreach (var info in ClientInstances.Values)
                 {
-                    PlayerStatePacket playerStatePacket = new(clientInfoToSend.Value.Id, clientInfoToSend.Value.Position, clientInfoToSend.Value.Orientation, clientInfoToSend.Value.Head.Orientation);
-                    _ = SendTcpPacket(client.Value.TcpClient, playerStatePacket);
+                    PlayerStatePacket packet = new(info.Id, info.Position, info.Orientation, info.Head.Orientation);
+                    SendUdpMessage(client, packet);
+                }
+            }
+        }
+
+        private void SendPlayerInfoTickTCP()
+        {
+            foreach (var client in ClientInstances.Values)
+            {
+                foreach (var info in ClientInstances.Values)
+                {
+                    PlayerStatePacket packet = new(info.Id, info.Position, info.Orientation, info.Head.Orientation);
+                    try
+                    {
+                        var _ = SendTcpPacket(client.TcpClient, packet);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending TCP PlayerStatePacket to {client.Username}: {ex.Message}");
+                    }
                 }
             }
         }
@@ -241,25 +315,5 @@ namespace CubeEngine.Engine.Server
 
         #endregion
 
-        #region Map
-
-        private void DeloadChunks(List<ClientInstance> clientInstances, ServerMap serverMap)
-        {
-            List<Vector2> chunksToDeload = new();
-            List<Vector2> playerChunkPositions = clientInstances.Select(ci =>
-            {
-                int chunkX = (int)MathF.Floor(ci.Position.X / CHUNK_SIZE);
-                int chunkZ = (int)MathF.Floor(ci.Position.Z / CHUNK_SIZE);
-                return new Vector2(chunkX, chunkZ);
-            }).ToList();
-
-            foreach (var item in playerChunkPositions)
-            {
-                
-            }
-
-        }
-
-        #endregion
     }
 }

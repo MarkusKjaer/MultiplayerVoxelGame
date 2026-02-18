@@ -39,6 +39,8 @@ namespace CubeEngine.Engine.Network
             PacketType packetType = (PacketType)BitConverter.ToUInt16(buffer, 0);
             switch (packetType)
             {
+                case PacketType.Ping:
+                    return new PingPacket();
                 case PacketType.Connect:
                     return new ConnectPacket(buffer);
                 case PacketType.PlayerState:

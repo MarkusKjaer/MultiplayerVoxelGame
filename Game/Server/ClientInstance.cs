@@ -26,6 +26,10 @@ namespace CubeEngine.Engine.Server
         private DateTime _lastBlockBroken = DateTime.MinValue;
         private readonly TimeSpan _blockBreakDelay = TimeSpan.FromMilliseconds(500);
 
+        public readonly SemaphoreSlim TcpSendLock = new SemaphoreSlim(1, 1);
+
+        public IPEndPoint? UdpEndPoint { get; set; } = null;
+
         public BoundingBox BoundingBox
         {
             get

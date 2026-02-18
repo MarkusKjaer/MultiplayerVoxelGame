@@ -2,12 +2,14 @@
 
 namespace CubeEngine.Engine.Client.World
 {
-    public struct ChunkData
+    public class ChunkData
     {
         public Voxel[] Voxels { get; private set; }
         public int SizeX { get; private set; }
         public int SizeY { get; private set; }
         public int SizeZ { get; private set; }
+
+        public bool IsDirty { get; set; }
 
         public ChunkData(int sizeX, int sizeY, int sizeZ, Vector2 position)
         {
@@ -30,7 +32,10 @@ namespace CubeEngine.Engine.Client.World
         public Voxel GetVoxel(int x, int y, int z)
             => Voxels[Index(x, y, z)];
         public void SetVoxel(int x, int y, int z, Voxel voxel)
-            => Voxels[Index(x, y, z)] = voxel;
+        {
+            Voxels[Index(x, y, z)] = voxel;
+            IsDirty = true;
+        }
         public Vector2 Position { get; private set; }
     }
 }

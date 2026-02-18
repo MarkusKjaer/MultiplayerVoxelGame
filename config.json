@@ -2,5 +2,5 @@
   "role": "host",
   "serverIp": "localhost",
   "tcpPort": 8000,
-  "udpPort": 8000
+  "udpPort": 8001
 }
