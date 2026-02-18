@@ -4,7 +4,6 @@ using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Engine.Client.World.Mesh;
 using OpenTK.Mathematics;
-using OpenTK.Windowing.Desktop;
 
 namespace CubeEngine.Engine.Client.World
 {
@@ -361,17 +360,14 @@ namespace CubeEngine.Engine.Client.World
             bool lessZ = z < 0;
             bool greaterZ = z >= centerData.SizeZ;
 
-            // --- FAST PATH: Inside the center chunk ---
             if (!lessX && !greaterX && !lessZ && !greaterZ)
             {
                 return centerData.GetVoxel(x, y, z);
             }
 
-            // --- WRAP COORDINATES ---
             int wrapX = lessX ? centerData.SizeX - 1 : (greaterX ? 0 : x);
             int wrapZ = lessZ ? centerData.SizeZ - 1 : (greaterZ ? 0 : z);
 
-            // --- BORDER PATH: Fetch from correct neighbor ---
             ChunkData targetNeighbor = null;
 
             if (lessX && !lessZ && !greaterZ) targetNeighbor = neighbors[0]; // X-
