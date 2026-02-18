@@ -433,5 +433,60 @@ namespace CubeEngine.Engine.Server
         }
 
         #endregion
+
+        #region Chunk Management
+
+        private HashSet<Vector2> GetAllChunksRequiredByPlayers()
+        {
+            var required = new HashSet<Vector2>();
+            int viewDistance = PlayerSettings.MaxChunkLoadDistance;
+
+            foreach (var client in GameServer.Instance.ClientInstances.Values)
+            {
+                var pos = client.Position;
+
+                int chunkX = (int)MathF.Floor(pos.X / ChunkSize);
+                int chunkZ = (int)MathF.Floor(pos.Z / ChunkSize);
+
+                for (int x = -viewDistance; x <= viewDistance; x++)
+                {
+                    for (int z = -viewDistance; z <= viewDistance; z++)
+                    {
+                        required.Add(new Vector2(chunkX + x, chunkZ + z));
+                    }
+                }
+            }
+
+            return required;
+        }
+
+        public void CleanupUnusedChunks()
+        {
+            var requiredChunks = GetAllChunksRequiredByPlayers();
+
+            foreach (var kvp in CurrentChunks)
+            {
+                if (!requiredChunks.Contains(kvp.Key))
+                {
+                    if (CurrentChunks.TryRemove(kvp.Key, out _))
+                    {
+                        Console.WriteLine($"Unloaded chunk {kvp.Key}");
+                    }
+                }
+            }
+        }
+
+        private double _lastCleanup;
+
+        public void Update(double time)
+        {
+            if (time - _lastCleanup > 5.0)
+            {
+                CleanupUnusedChunks();
+                _lastCleanup = time;
+            }
+        }
+
+        #endregion
     }
 }

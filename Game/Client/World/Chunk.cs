@@ -236,7 +236,10 @@ namespace CubeEngine.Engine.Client.World
 
         public void Remove()
         {
-            ChunkMesh.Dispose();
+            GLActionQueue.Enqueue(() =>
+            {
+                ChunkMesh.Dispose();
+            });
         }
     }
 }

@@ -128,5 +128,41 @@ namespace CubeEngine.Engine.Client.World
 
             return VoxelType.Empty;
         }
+
+        public void RemoveOutOfRangeChunks(Vector3 playerPosition, int chunkRadius)
+        {
+            int playerChunkX = (int)MathF.Floor(playerPosition.X / ChunkSettings.Width);
+            int playerChunkZ = (int)MathF.Floor(playerPosition.Z / ChunkSettings.Width);
+
+            List<Vector2> chunksToRemove = new();
+
+            lock (_chunkLock)
+            {
+                foreach (var kvp in CurrentChunks)
+                {
+                    Vector2 worldPos = kvp.Key;
+
+                    int chunkX = (int)(worldPos.X / ChunkSettings.Width);
+                    int chunkZ = (int)(worldPos.Y / ChunkSettings.Width);
+
+                    int dx = chunkX - playerChunkX;
+                    int dz = chunkZ - playerChunkZ;
+
+                    if (dx * dx + dz * dz > chunkRadius * chunkRadius)
+                    {
+                        chunksToRemove.Add(worldPos);
+                    }
+                }
+
+                foreach (var pos in chunksToRemove)
+                {
+                    if (CurrentChunks.TryGetValue(pos, out var chunk))
+                    {
+                        chunk.Remove(); 
+                        CurrentChunks.Remove(pos);
+                    }
+                }
+            }
+        }
     }
 }

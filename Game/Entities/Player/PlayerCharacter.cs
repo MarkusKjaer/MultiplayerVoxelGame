@@ -57,7 +57,13 @@ namespace CubeEngine.Engine.Entities.Player
             _chunkCheckCooldown -= (float)Time.DeltaTime;
             if (_chunkCheckCooldown <= 0f)
             {
-                RequestNearbyChunks();
+                var map = CubeGameWindow.Instance.CurrentGameScene.Map;
+                if (map != null)
+                {
+                    RequestNearbyChunks();
+                    map.RemoveOutOfRangeChunks(Position, ChunkRadius);
+                }
+
                 _chunkCheckCooldown = ChunkCheckInterval;
             }
         }
@@ -115,6 +121,9 @@ namespace CubeEngine.Engine.Entities.Player
             {
                 for (int dz = -ChunkRadius; dz <= ChunkRadius; dz++)
                 {
+                    if (dx * dx + dz * dz > ChunkRadius * ChunkRadius)
+                        continue;
+
                     Vector2 chunkCoords = new(playerChunkX + dx, playerChunkZ + dz);
                     Vector2 worldPos = chunkCoords * ChunkSettings.Width;
 

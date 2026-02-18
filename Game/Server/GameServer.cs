@@ -310,6 +310,7 @@ namespace CubeEngine.Engine.Server
             foreach (var client in ClientInstances.Values)
             {
                 client.Update();
+                ServerMap.Update(GameServer.ServerDeltaTime);
             }
         }
 
