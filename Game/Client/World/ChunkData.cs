@@ -31,7 +31,16 @@ namespace CubeEngine.Engine.Client.World
             return x + SizeX * (y + SizeY * z);
         }
         public VoxelType GetVoxel(int x, int y, int z)
-            => (VoxelType)Voxels[Index(x, y, z)];
+        {
+            if (x < 0 || x >= SizeX ||
+                y < 0 || y >= SizeY ||
+                z < 0 || z >= SizeZ)
+            {
+                return VoxelType.Empty;
+            }
+
+            return (VoxelType)Voxels[x + SizeX * (y + SizeY * z)];
+        }
         public void SetVoxel(int x, int y, int z, VoxelType voxel)
         {
             Voxels[Index(x, y, z)] = (byte)voxel;
