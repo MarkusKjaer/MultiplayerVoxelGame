@@ -24,19 +24,17 @@ namespace CubeEngine.Engine.Server
             _chunkData = chunkData;
         }
 
-        public Voxel GetVoxel(int x, int y, int z)
+        public VoxelType GetVoxel(int x, int y, int z)
         {
-            if (x >= 0 && x < ChunkData.Voxels.GetLength(0) &&
-                y >= 0 && y < ChunkData.Voxels.GetLength(1) &&
-                z >= 0 && z < ChunkData.Voxels.GetLength(2))
+            if (x >= 0 && x < ChunkData.SizeX &&
+                y >= 0 && y < ChunkData.SizeY &&
+                z >= 0 && z < ChunkData.SizeZ)
             {
-                return ChunkData.Voxels[x, y, z];
+                return ChunkData.GetVoxel(x, y, z);
             }
             else
             {
-                Voxel v = new Voxel();
-                v.VoxelType = VoxelType.Empty;
-                return v;
+                return VoxelType.Empty;
             }
         }
     }

@@ -1,24 +1,25 @@
 ﻿using CubeEngine.Engine.Client.Graphics;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window.Setup.Texture;
+using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Engine.Network;
 using MultiplayerVoxelGame.Game.Resources;
+using MultiplayerVoxelGame.Util.Settings;
 using OpenTK.Mathematics;
+using System.Collections.Generic;
 
 namespace CubeEngine.Engine.Client.World
 {
     public class Map
     {
-        public List<Chunk> CurrentChunks = [];
+        private readonly object _chunkLock = new object();
+
+        public Dictionary<Vector2, Chunk> CurrentChunks = new();
 
         private Material _material;
 
         public Map(int chunkSize, int maxWorldHeight, int seed, TextureArrayManager textureArrayManager)
         {
-            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string parentDirectory = Directory.GetParent(baseDirectory).FullName;
-            string shadersPath = Path.Combine(parentDirectory, "Assets", "Shaders", "MapShaders");
-
             string vertShaderPath = AssetsManager.Instance.LoadedAssets[("MapChunkShader", AssetType.VERT)].FilePath;
             string fragShaderPath = AssetsManager.Instance.LoadedAssets[("MapChunkShader", AssetType.FRAG)].FilePath;
 
@@ -38,41 +39,129 @@ namespace CubeEngine.Engine.Client.World
             switch (packet)
             {
                 case ChunkInfoPacket chunkInfoPacket:
+                    // Process through GLActionQueue to ensure OpenGL calls stay on the main thread
                     GLActionQueue.Enqueue(() => AddNewChunk(chunkInfoPacket.ChunkData));
                     break;
-                default:
-                    break;
             }
-
         }
 
         public void AddNewChunk(ChunkData chunkData)
         {
-            var chunkOnThisPos = CurrentChunks.Find(currentLoadedChunk => currentLoadedChunk.ChunkData.Position == chunkData.Position);
+            lock (_chunkLock)
+            {
+                Chunk newChunk;
+                if (CurrentChunks.TryGetValue(chunkData.Position, out var existingChunk))
+                {
+                    existingChunk.ChunkData = chunkData; 
+                    newChunk = existingChunk;
+                }
+                else
+                {
+                    newChunk = new Chunk(chunkData, _material); 
+                    CurrentChunks.Add(chunkData.Position, newChunk);
+                }
 
-            if (chunkOnThisPos != null)
-            {
-                chunkOnThisPos.ChunkData = chunkData;
+                RefreshNeighbor(chunkData.Position + new Vector2(ChunkSettings.Width, 0));  // East (+X)
+                RefreshNeighbor(chunkData.Position + new Vector2(-ChunkSettings.Width, 0)); // West (-X)
+                RefreshNeighbor(chunkData.Position + new Vector2(0, ChunkSettings.Width));  // North (+Z)
+                RefreshNeighbor(chunkData.Position + new Vector2(0, -ChunkSettings.Width)); // South (-Z)
             }
-            else
+        }
+
+        private void RefreshNeighbor(Vector2 position)
+        {
+            if (CurrentChunks.TryGetValue(position, out var neighbor))
             {
-                CurrentChunks.Add(new(chunkData, _material));
+                neighbor.RegenerateMeshAsync();
             }
         }
 
         public void UpdateMeshs(Camera camera, int windowWidth, int windowheight)
         {
-            for (int i = 0; i < CurrentChunks.Count; i++)
+            lock (_chunkLock)
             {
-                CurrentChunks[i].OnUpdate();
+                foreach (var chunk in CurrentChunks.Values)
+                {
+                    chunk.OnUpdate();
+                }
             }
         }
 
         public void Render()
         {
-            for (int i = 0; i < CurrentChunks.Count; i++)
+            lock (_chunkLock)
             {
-                CurrentChunks[i].Render();
+                foreach (var chunk in CurrentChunks.Values)
+                {
+                    chunk.Render();
+                }
+            }
+        }
+
+        public VoxelType GetVoxelGlobal(int globalX, int globalY, int globalZ)
+        {
+            const int CHUNK_SIZE = ChunkSettings.Width;
+
+            int chunkX = (int)Math.Floor(globalX / (float)CHUNK_SIZE);
+            int chunkZ = (int)Math.Floor(globalZ / (float)CHUNK_SIZE);
+
+            int localX = globalX - chunkX * CHUNK_SIZE;
+            int localZ = globalZ - chunkZ * CHUNK_SIZE;
+            int localY = globalY;
+
+            if (localX < 0 || localX >= CHUNK_SIZE ||
+                localZ < 0 || localZ >= CHUNK_SIZE ||
+                localY < 0 || localY >= 80)
+            {
+                return VoxelType.Empty;
+            }
+
+            Vector2 chunkPos = new Vector2(chunkX, chunkZ);
+
+            lock (_chunkLock)
+            {
+                if (CurrentChunks.TryGetValue(chunkPos, out var chunk))
+                {
+                    return chunk.ChunkData.GetVoxel(localX, localY, localZ);
+                }
+            }
+
+            return VoxelType.Empty;
+        }
+
+        public void RemoveOutOfRangeChunks(Vector3 playerPosition, int chunkRadius)
+        {
+            int playerChunkX = (int)MathF.Floor(playerPosition.X / ChunkSettings.Width);
+            int playerChunkZ = (int)MathF.Floor(playerPosition.Z / ChunkSettings.Width);
+
+            List<Vector2> chunksToRemove = new();
+
+            lock (_chunkLock)
+            {
+                foreach (var kvp in CurrentChunks)
+                {
+                    Vector2 worldPos = kvp.Key;
+
+                    int chunkX = (int)(worldPos.X / ChunkSettings.Width);
+                    int chunkZ = (int)(worldPos.Y / ChunkSettings.Width);
+
+                    int dx = chunkX - playerChunkX;
+                    int dz = chunkZ - playerChunkZ;
+
+                    if (dx * dx + dz * dz > chunkRadius * chunkRadius)
+                    {
+                        chunksToRemove.Add(worldPos);
+                    }
+                }
+
+                foreach (var pos in chunksToRemove)
+                {
+                    if (CurrentChunks.TryGetValue(pos, out var chunk))
+                    {
+                        chunk.Remove(); 
+                        CurrentChunks.Remove(pos);
+                    }
+                }
             }
         }
     }

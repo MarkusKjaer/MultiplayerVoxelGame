@@ -30,20 +30,21 @@ namespace CubeEngine.Engine.Network
             index += 4;
 
             var chunkData = ChunkData;
-            chunkData.Position = new Vector2(
+
+            var position = new Vector2(
                 BitConverter.ToSingle(buffer, index),
                 BitConverter.ToSingle(buffer, index + 4)
             );
             index += 8;
-            ChunkData = chunkData; 
+            ChunkData = chunkData;
 
 
             int compressedLength = BitConverter.ToInt32(buffer, index);
             index += 4;
 
             chunkData = ChunkData;
-            chunkData.Voxels = new Voxel[ChunkSize, MapHeight, ChunkSize];
-            ChunkData = chunkData;
+
+            ChunkData = new(ChunkSize, MapHeight, ChunkSize, position);
 
             int voxelIndex = 0;
             while (voxelIndex < ChunkSize * MapHeight * ChunkSize)
@@ -56,11 +57,7 @@ namespace CubeEngine.Engine.Network
                     int y = (voxelIndex / ChunkSize) % MapHeight;
                     int z = voxelIndex % ChunkSize;
 
-                    ChunkData.Voxels[x, y, z] = new Voxel
-                    {
-                        VoxelType = (Client.World.Enum.VoxelType)type,
-                        Position = new Vector3(x, y, z)
-                    };
+                    ChunkData.SetVoxel(x, y, z, (VoxelType)type);
 
                     voxelIndex++;
                 }
@@ -98,11 +95,11 @@ namespace CubeEngine.Engine.Network
                 {
                     for (int z = 0; z < ChunkSize; z++)
                     {
-                        var current = ChunkData.Voxels[x, y, z].VoxelType;
+                        var current = ChunkData.GetVoxel(x, y, z);
 
                         if (lastType == null)
                         {
-                            lastType = current;
+                            lastType = current; 
                             count = 1;
                         }
                         else if (lastType == current && count < 255)

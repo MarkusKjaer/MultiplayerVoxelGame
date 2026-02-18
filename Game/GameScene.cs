@@ -48,6 +48,14 @@ namespace CubeEngine.Engine
             }
         }
 
+        public virtual void LateUpdate()
+        {
+            for (int i = 0; i < _gameObjects.Count; i++)
+            {
+                _gameObjects[i].OnLateUpdate();
+            }
+        }
+
         public virtual void Render()
         {
             for (int i = 0; i < _gameObjects.Count; i++)

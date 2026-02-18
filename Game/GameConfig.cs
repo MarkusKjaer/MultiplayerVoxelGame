@@ -22,7 +22,7 @@ namespace MultiplayerVoxelGame.Game
         public int TcpPort { get; set; } = 8000;
 
         [JsonPropertyName("udpPort")]
-        public int UdpPort { get; set; } = 9000;
+        public int UdpPort { get; set; } = 8001;
 
         public static GameConfig Load(string filePath)
         {

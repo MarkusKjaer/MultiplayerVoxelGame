@@ -2,6 +2,7 @@
 using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Network;
 using CubeEngine.Util;
+using MultiplayerVoxelGame.Util.Settings;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -15,16 +16,16 @@ namespace CubeEngine.Engine.Entities.Player
 
         private float _chunkCheckCooldown = 0f;
         private const float ChunkCheckInterval = 5f;
-        private const int ChunkRadius = 1;
+        private const int ChunkRadius = PlayerSettings.MaxChunkLoadDistance;
 
         public PlayerCharacter(Vector3 position)
         {
             Position = position;
 
             _movement = new MovementController(
-                moveSpeed: 2f,
-                gravity: -9.81f,
-                jumpForce: 5f,
+                moveSpeed: PlayerSettings.moveSpeed,
+                gravity: PlayerSettings.gravity,
+                jumpForce: PlayerSettings.jumpForce,
                 playerSize: PlayerSize
             );
 
@@ -56,7 +57,13 @@ namespace CubeEngine.Engine.Entities.Player
             _chunkCheckCooldown -= (float)Time.DeltaTime;
             if (_chunkCheckCooldown <= 0f)
             {
-                RequestNearbyChunks();
+                var map = CubeGameWindow.Instance.CurrentGameScene.Map;
+                if (map != null)
+                {
+                    RequestNearbyChunks();
+                    map.RemoveOutOfRangeChunks(Position, ChunkRadius);
+                }
+
                 _chunkCheckCooldown = ChunkCheckInterval;
             }
         }
@@ -107,19 +114,22 @@ namespace CubeEngine.Engine.Entities.Player
             var map = CubeGameWindow.Instance.CurrentGameScene.Map;
             if (map == null) return;
 
-            int playerChunkX = (int)MathF.Floor(3);
-            int playerChunkZ = (int)MathF.Floor(3);
+            int playerChunkX = (int)MathF.Floor(Position.X / ChunkSettings.Width);
+            int playerChunkZ = (int)MathF.Floor(Position.Z / ChunkSettings.Width);
 
             for (int dx = -ChunkRadius; dx <= ChunkRadius; dx++)
             {
                 for (int dz = -ChunkRadius; dz <= ChunkRadius; dz++)
                 {
-                    Vector2 chunkPos = new(playerChunkX + dx, playerChunkZ + dz);
+                    if (dx * dx + dz * dz > ChunkRadius * ChunkRadius)
+                        continue;
 
-                    bool loaded = map.CurrentChunks.Exists(c => c.ChunkData.Position == chunkPos * 32);
-                    if (!loaded)
+                    Vector2 chunkCoords = new(playerChunkX + dx, playerChunkZ + dz);
+                    Vector2 worldPos = chunkCoords * ChunkSettings.Width;
+
+                    if (!map.CurrentChunks.ContainsKey(worldPos))
                     {
-                        _ = GameClient.Instance.SendTcpMessage(new ChunkRequestPacket(chunkPos));
+                        _ = GameClient.Instance.SendTcpMessage(new ChunkRequestPacket(chunkCoords));
                     }
                 }
             }
@@ -131,20 +141,21 @@ namespace CubeEngine.Engine.Entities.Player
             var map = CubeGameWindow.Instance.CurrentGameScene.Map;
             if (map == null) return false;
 
-            foreach (var chunk in map.CurrentChunks)
+            int chunkX = (int)MathF.Floor(x / (float)ChunkSettings.Width) * ChunkSettings.Width;
+            int chunkZ = (int)MathF.Floor(z / (float)ChunkSettings.Width) * ChunkSettings.Width;
+            Vector2 chunkKey = new(chunkX, chunkZ);
+
+            if (map.CurrentChunks.TryGetValue(chunkKey, out var chunk))
             {
                 var data = chunk.ChunkData;
-                Vector2 origin = data.Position;
-                int cx = x - (int)origin.X;
-                int cz = z - (int)origin.Y;
 
-                if (cx < 0 || cz < 0 ||
-                    cx >= data.Voxels.GetLength(0) ||
-                    cz >= data.Voxels.GetLength(2))
-                    continue;
+                int lx = x - chunkX;
+                int lz = z - chunkZ;
 
-                if (y >= 0 && y < data.Voxels.GetLength(1))
-                    return data.Voxels[cx, y, cz].VoxelType != Client.World.Enum.VoxelType.Empty;
+                if (y >= 0 && y < data.SizeY)
+                {
+                    return data.GetVoxel(lx, y, lz) != Client.World.Enum.VoxelType.Empty;
+                }
             }
 
             return false;

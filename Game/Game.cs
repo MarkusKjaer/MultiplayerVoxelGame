@@ -9,6 +9,7 @@ using CubeEngine.Engine.Enum;
 using CubeEngine.Engine.Server;
 using CubeEngine.Util;
 using MultiplayerVoxelGame.Game.Resources;
+using MultiplayerVoxelGame.Util.Settings;
 using OpenTK.Mathematics;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -50,7 +51,7 @@ namespace CubeEngine.Engine
 
             gameWindow.VSync = OpenTK.Windowing.Common.VSyncMode.On;
                 
-            PlayerCharacter player = new(new(80, 0, 80));
+            PlayerCharacter player = new(new(0, 0, 0));
             PlayerCamera camera = new(new Vector3(0, 1.6f, 0), player)
             {
                 Parent = player
@@ -61,7 +62,7 @@ namespace CubeEngine.Engine
             CurrentGameScene.ActiveCamera = camera;
 
             TextureArrayManager textureArrayManagerForMap = LoadWorldTextures();
-            CurrentGameScene.Map = new(32, 64, 1, textureArrayManagerForMap);
+            CurrentGameScene.Map = new(ChunkSettings.Width, ChunkSettings.Height, 1, textureArrayManagerForMap);
 
             PlayerRenderManager playerRenderManager = new();
 

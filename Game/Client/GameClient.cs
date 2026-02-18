@@ -1,4 +1,5 @@
 ﻿using CubeEngine.Engine.Network;
+using System.Net;
 using System.Net.Sockets;
 
 namespace CubeEngine.Engine.Client
@@ -20,14 +21,26 @@ namespace CubeEngine.Engine.Client
         public int ClientId { get; private set; } = -1;
         public string Name { get; private set; }
 
+        private readonly string _serverAddress;
+        private readonly int _udpPort;
+
         public GameClient(string address, int tcpPort, int udpPort)
         {
+            _serverAddress = address;
+            _udpPort = udpPort;
+
+            // TCP setup
             _tcpClient = new TcpClient();
             _tcpClient.Connect(address, tcpPort);
             _tcpStream = _tcpClient.GetStream();
 
+            // UDP setup
             _udpClient = new UdpClient();
-            _udpClient.Connect(address, udpPort);
+            _udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            _udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, 0)); // OS picks free local port
+            _udpClient.Connect(address, udpPort); // set default remote for SendAsync
+
+            Console.WriteLine($"UDP client bound to {_udpClient.Client.LocalEndPoint} and connected to {address}:{udpPort}");
 
             Instance = this;
 
@@ -44,7 +57,12 @@ namespace CubeEngine.Engine.Client
 
             ReadyTcs.SetResult(true);
 
+            // Start UDP receive loop first
             _ = ReceiveUdpLoop();
+
+            var hello = new PingPacket();
+            await SendUdpMessage(hello);
+
             _ = ReceiveTcpLoop();
         }
 
@@ -63,9 +81,7 @@ namespace CubeEngine.Engine.Client
                 try
                 {
                     UdpReceiveResult result = await _udpClient.ReceiveAsync();
-                    byte[] buffer = result.Buffer;
-
-                    Packet packet = Packet.Deserialize(buffer);
+                    Packet packet = Packet.Deserialize(result.Buffer);
                     ServerMessage?.Invoke(packet);
                 }
                 catch (Exception e)
@@ -81,7 +97,7 @@ namespace CubeEngine.Engine.Client
             if (_running && _udpClient != null)
             {
                 byte[] data = packet.Serialize();
-                await _udpClient.SendAsync(data, data.Length);
+                await _udpClient.SendAsync(data, data.Length); // endpoint already set
             }
         }
         #endregion
@@ -123,8 +139,9 @@ namespace CubeEngine.Engine.Client
                 }
                 catch (Exception e)
                 {
-                    if (_running)
-                        Console.Error.WriteLine($"Failed to deserialize TCP packet: {e}");
+                    Console.Error.WriteLine($"TCP Stream desynced. Closing connection: {e}");
+                    Stop();
+                    break;
                 }
             }
             Console.WriteLine("Stopped client");
@@ -137,8 +154,11 @@ namespace CubeEngine.Engine.Client
                 byte[] data = packet.Serialize();
                 byte[] lengthPrefix = BitConverter.GetBytes(data.Length);
 
-                await _tcpStream.WriteAsync(lengthPrefix, 0, lengthPrefix.Length);
-                await _tcpStream.WriteAsync(data, 0, data.Length);
+                byte[] fullPacket = new byte[lengthPrefix.Length + data.Length];
+                Buffer.BlockCopy(lengthPrefix, 0, fullPacket, 0, lengthPrefix.Length);
+                Buffer.BlockCopy(data, 0, fullPacket, lengthPrefix.Length, data.Length);
+
+                await _tcpStream.WriteAsync(fullPacket, 0, fullPacket.Length);
                 await _tcpStream.FlushAsync();
             }
         }
@@ -158,11 +178,9 @@ namespace CubeEngine.Engine.Client
 
         private void HandlePacket(PlayerJoinConfirmPacket playerJoinConfirmPacket)
         {
-            if(ClientId == -1)
+            if (ClientId == -1)
             {
                 ClientId = playerJoinConfirmPacket.PlayerId;
-
-
                 Name = playerJoinConfirmPacket.PlayerName;
             }
         }

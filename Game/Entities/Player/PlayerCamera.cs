@@ -17,7 +17,7 @@ namespace CubeEngine.Engine.Entities.Player
             _character = playerCharacter;
         }
 
-        public override void OnUpdate()
+        public override void OnLateUpdate()
         {
             UpdateMouseLook();
         }

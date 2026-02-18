@@ -18,8 +18,6 @@ namespace CubeEngine.Util
             if (_heightmap == null)
                 throw new InvalidOperationException("Heightmap not loaded. Call LoadHeightmap first.");
 
-
-
             int width = _heightmap.Width;
             int height = _heightmap.Height;
 

@@ -38,8 +38,7 @@ namespace CubeEngine.Engine.Client.World
 
         private ChunkData GenChunk(int chunkSize, Vector2 chunkIndex)
         {
-            ChunkData chunk = new();
-            chunk.Voxels = new Voxel[chunkSize, _maxWorldHeight, chunkSize];
+            ChunkData chunk = new(chunkSize, _maxWorldHeight, chunkSize, new Vector2(chunkIndex.X * chunkSize, chunkIndex.Y * chunkSize));
 
             for (int x = 0; x < chunkSize; x++)
             {
@@ -48,8 +47,15 @@ namespace CubeEngine.Engine.Client.World
                     float worldX = chunkIndex.X * chunkSize + x;
                     float worldZ = chunkIndex.Y * chunkSize + z;
 
-                    float height = Noise.ImageHeight(worldX, worldZ) * _maxWorldHeight;
-                    int groundHeight = (int)Math.Clamp(height, 0, _maxWorldHeight - 1);
+                    float scale = 0.01f;
+
+                    float height = Noise.ImageHeight(
+                        worldX * scale,
+                        worldZ * scale
+                    ) * _maxWorldHeight;
+
+                    int groundHeight = (int)MathF.Round(height);
+                    groundHeight = Math.Clamp(groundHeight, 0, _maxWorldHeight - 1);
 
                     for (int y = 0; y < _maxWorldHeight; y++)
                     {
@@ -57,16 +63,10 @@ namespace CubeEngine.Engine.Client.World
                                               y < groundHeight ? VoxelType.Stone :
                                               VoxelType.Empty;
 
-                        chunk.Voxels[x, y, z] = new Voxel
-                        {
-                            Position = new Vector3(x, y, z),
-                            VoxelType = voxelType
-                        };
+                        chunk.SetVoxel(x, y, z, voxelType);
                     }
                 }
             }
-
-            chunk.Position = new Vector2(chunkIndex.X * chunkSize, chunkIndex.Y * chunkSize);
 
             return chunk;
         }

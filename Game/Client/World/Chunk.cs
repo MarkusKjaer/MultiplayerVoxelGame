@@ -1,7 +1,9 @@
-﻿using OpenTK.Mathematics;
+﻿using CubeEngine.Engine.Client.Graphics;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window;
+using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Engine.Client.World.Mesh;
+using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Client.World
 {
@@ -10,21 +12,86 @@ namespace CubeEngine.Engine.Client.World
         private ChunkData _chunkData;
         public ChunkMesh ChunkMesh { get; private set; }
 
+        private int _meshVersion = 0;
+
+        #region MeshData
+
+        private static readonly Vector3[][] FaceVertices = {
+            [new(0,0,1), new(1,0,1), new(0,1,1), new(1,1,1)], // Z+
+            [new(0,0,0), new(0,1,0), new(1,0,0), new(1,1,0)], // Z-
+            [new(1,0,0), new(1,1,0), new(1,0,1), new(1,1,1)], // X+
+            [new(0,0,0), new(0,1,0), new(0,0,1), new(0,1,1)], // X-
+            [new(0,1,0), new(0,1,1), new(1,1,0), new(1,1,1)], // Y+
+            [new(0,0,0), new(0,0,1), new(1,0,0), new(1,0,1)]  // Y-
+        };
+
+        private static readonly Vector2[][] FaceUVs = {
+            [new(0,0), new(1,0), new(0,1), new(1,1)], // Z+
+            [new(0,0), new(0,1), new(1,0), new(1,1)], // Z-
+            [new(0,0), new(0,1), new(1,0), new(1,1)], // X+
+            [new(0,0), new(1,0), new(0,1), new(1,1)], // X-
+            [new(0,0), new(1,0), new(0,1), new(1,1)], // Y+
+            [new(0,0), new(1,0), new(0,1), new(1,1)]  // Y-
+        };
+
+        private static readonly Vector3[] FaceNormals = {
+            new(0, 0, 1),  // Z+
+            new(0, 0, -1), // Z-
+            new(1, 0, 0),  // X+
+            new(-1, 0, 0), // X-
+            new(0, 1, 0),  // Y+
+            new(0, -1, 0)  // Y-
+        };
+
+        private static readonly (int x, int y, int z)[][] AoOffsets = {
+            new (int, int, int)[] { (-1,0,0),(0,-1,0), ( 1,0,0),(0,-1,0), (-1,0,0),(0, 1,0), ( 1,0,0),(0, 1,0) }, // Z+
+            new (int, int, int)[] { (-1,0,0),(0,-1,0), (-1,0,0),(0, 1,0), ( 1,0,0),(0,-1,0), ( 1,0,0),(0, 1,0) }, // Z-
+            new (int, int, int)[] { (0,-1,0),(0,0,-1), (0, 1,0),(0,0,-1), (0,-1,0),(0,0, 1), (0, 1,0),(0,0, 1) }, // X+
+            new (int, int, int)[] { (0,-1,0),(0,0,-1), (0, 1,0),(0,0,-1), (0,-1,0),(0,0, 1), (0, 1,0),(0,0, 1) }, // X-
+            new (int, int, int)[] { (-1,0,0),(0,0,-1), (-1,0,0),(0,0, 1), ( 1,0,0),(0,0,-1), ( 1,0,0),(0,0, 1) }, // Y+
+            new (int, int, int)[] { (-1,0,0),(0,0,-1), (-1,0,0),(0,0, 1), ( 1,0,0),(0,0,-1), ( 1,0,0),(0,0, 1) }  // Y-
+        };
+
+        #endregion
+
         public ChunkData ChunkData
         {
             get => _chunkData;
             set
             {
                 _chunkData = value;
-                ChunkMesh.UpdateMesh(GenChunkMesh(_chunkData));
+                RegenerateMeshAsync();
             }
         }
+
 
         public Chunk(ChunkData chunkData, Material material)
         {
             _chunkData = chunkData;
 
-            ChunkMesh = new(GenChunkMesh(chunkData), material);
+            ChunkMesh = new ChunkMesh(ChunkMeshInfo.Empty, material);
+
+            RegenerateMeshAsync();
+        }
+
+        public Task<ChunkMeshInfo> GenerateMeshAsync()
+        {
+            var dataSnapshot = _chunkData; 
+            return Task.Run(() => GenChunkMesh(dataSnapshot));
+        }
+
+        public async void RegenerateMeshAsync()
+        {
+            int version = ++_meshVersion;
+            var dataSnapshot = _chunkData;
+
+            var meshData = await Task.Run(() => GenChunkMesh(dataSnapshot));
+
+            GLActionQueue.Enqueue(() =>
+            {
+                if (version != _meshVersion) return; 
+                ChunkMesh.UpdateMesh(meshData);
+            });
         }
 
         private ChunkMeshInfo GenChunkMesh(ChunkData chunkData)
@@ -33,131 +100,26 @@ namespace CubeEngine.Engine.Client.World
             List<int> indices = [];
             int vertexOffset = 0;
 
-            for (int i = 0; i < chunkData.Voxels.GetLength(0); i++)
-                for (int j = 0; j < chunkData.Voxels.GetLength(1); j++)
-                    for (int k = 0; k < chunkData.Voxels.GetLength(2); k++)
+            for (int i = 0; i < chunkData.SizeX; i++)
+                for (int j = 0; j < chunkData.SizeY; j++)
+                    for (int k = 0; k < chunkData.SizeZ; k++)
                     {
-                        if (chunkData.Voxels[i, j, k].VoxelType == Enum.VoxelType.Empty)
+                        var voxel = chunkData.GetVoxel(i, j, k);
+                        if (voxel == Enum.VoxelType.Empty)
                             continue;
 
-                        int textureLayer = (int)chunkData.Voxels[i, j, k].VoxelType - 1;
+                        int textureLayer = (int)voxel - 1;
                         Vector3 pos = new(i, j, k);
 
-                        Vector3 v000 = pos + new Vector3(0, 0, 0);
-                        Vector3 v100 = pos + new Vector3(1, 0, 0);
-                        Vector3 v010 = pos + new Vector3(0, 1, 0);
-                        Vector3 v110 = pos + new Vector3(1, 1, 0);
-                        Vector3 v001 = pos + new Vector3(0, 0, 1);
-                        Vector3 v101 = pos + new Vector3(1, 0, 1);
-                        Vector3 v011 = pos + new Vector3(0, 1, 1);
-                        Vector3 v111 = pos + new Vector3(1, 1, 1);
+                        // 0: Z+, 1: Z-, 2: X+, 3: X-, 4: Y+, 5: Y-
+                        for (int faceIndex = 0; faceIndex < 6; faceIndex++)
+                        {
+                            Vector3 normal = FaceNormals[faceIndex];
 
-                        Vector2 uv00 = new(0, 0);
-                        Vector2 uv10 = new(1, 0);
-                        Vector2 uv01 = new(0, 1);
-                        Vector2 uv11 = new(1, 1);
-
-                        // Z+
-                        if (GetVoxel(i, j, k + 1).VoxelType == Enum.VoxelType.Empty)
-                        {
-                            AddFace(vertices, indices, ref vertexOffset,
-                                new[] { v001, v101, v011, v111 },
-                                new Vector3(0, 0, 1),
-                                new[] { uv00, uv10, uv01, uv11 },
-                                textureLayer,
-                                i, j, k,
-                                new (int, int, int)[]
-                                {
-                                    (-1,0,0),(0,-1,0),
-                                    ( 1,0,0),(0,-1,0),
-                                    (-1,0,0),(0, 1,0),
-                                    ( 1,0,0),(0, 1,0)
-                                });
-                        }
-                        // Z-
-                        if (GetVoxel(i, j, k - 1).VoxelType == Enum.VoxelType.Empty)
-                        {
-                            AddFace(vertices, indices, ref vertexOffset,
-                                new[] { v000, v010, v100, v110 },
-                                new Vector3(0, 0, -1),
-                                new[] { uv00, uv01, uv10, uv11 },
-                                textureLayer,
-                                i, j, k,
-                                new (int, int, int)[]
-                                {
-                                    (-1,0,0),(0,-1,0),
-                                    (-1,0,0),(0, 1,0),
-                                    ( 1,0,0),(0,-1,0),
-                                    ( 1,0,0),(0, 1,0)
-                                });
-                        }
-                        // X+
-                        if (GetVoxel(i + 1, j, k).VoxelType == Enum.VoxelType.Empty)
-                        {
-                            AddFace(vertices, indices, ref vertexOffset,
-                                new[] { v100, v110, v101, v111 },
-                                new Vector3(1, 0, 0),
-                                new[] { uv00, uv01, uv10, uv11 },
-                                textureLayer,
-                                i, j, k,
-                                new (int, int, int)[]
-                                {
-                                    (0,-1,0),(0,0,-1),
-                                    (0, 1,0),(0,0,-1),
-                                    (0,-1,0),(0,0, 1),
-                                    (0, 1,0),(0,0, 1)
-                                });
-                        }
-                        // X-
-                        if (GetVoxel(i - 1, j, k).VoxelType == Enum.VoxelType.Empty)
-                        {
-                            AddFace(vertices, indices, ref vertexOffset,
-                                new[] { v000, v010, v001, v011 },
-                                new Vector3(-1, 0, 0),
-                                new[] { uv00, uv10, uv01, uv11 },
-                                textureLayer,
-                                i, j, k,
-                                new (int, int, int)[]
-                                {
-                                    (0,-1,0),(0,0,-1),
-                                    (0, 1,0),(0,0,-1),
-                                    (0,-1,0),(0,0, 1),
-                                    (0, 1,0),(0,0, 1)
-                                });
-                        }
-                        // Y+
-                        if (GetVoxel(i, j + 1, k).VoxelType == Enum.VoxelType.Empty)
-                        {
-                            AddFace(vertices, indices, ref vertexOffset,
-                                new[] { v010, v011, v110, v111 },
-                                new Vector3(0, 1, 0),
-                                new[] { uv00, uv10, uv01, uv11 },
-                                textureLayer,
-                                i, j, k,
-                                new (int, int, int)[]
-                                {
-                                    (-1,0,0),(0,0,-1),
-                                    (-1,0,0),(0,0, 1),
-                                    ( 1,0,0),(0,0,-1),
-                                    ( 1,0,0),(0,0, 1)
-                                });
-                        }
-                        // Y-
-                        if (GetVoxel(i, j - 1, k).VoxelType == Enum.VoxelType.Empty)
-                        {
-                            AddFace(vertices, indices, ref vertexOffset,
-                                new[] { v000, v001, v100, v101 },
-                                new Vector3(0, -1, 0),
-                                new[] { uv00, uv10, uv01, uv11 },
-                                textureLayer,
-                                i, j, k,
-                                new (int, int, int)[]
-                                {
-                                    (-1,0,0),(0,0,-1),
-                                    (-1,0,0),(0,0, 1),
-                                    ( 1,0,0),(0,0,-1),
-                                    ( 1,0,0),(0,0, 1)
-                                });
+                            if (GetVoxel(i + (int)normal.X, j + (int)normal.Y, k + (int)normal.Z) == Enum.VoxelType.Empty)
+                            {
+                                AddFace(vertices, indices, ref vertexOffset, pos, normal, textureLayer, i, j, k, faceIndex);
+                            }
                         }
 
                     }
@@ -169,53 +131,57 @@ namespace CubeEngine.Engine.Client.World
             List<VertexPositionNormalTextureLayerAO> vertices,
             List<int> indices,
             ref int vertexOffset,
-            Vector3[] positions,
+            Vector3 blockPos,
             Vector3 normal,
-            Vector2[] uvs,
             int textureLayer,
             int x, int y, int z,
-            (int x, int y, int z)[] aoOffsets)
+            int faceIndex)
         {
             float[] ao = new float[4];
+            var faceAoOffsets = AoOffsets[faceIndex];
+            var faceVerts = FaceVertices[faceIndex];
+            var faceUvs = FaceUVs[faceIndex];
 
             for (int v = 0; v < 4; v++)
             {
-                var side1Off = aoOffsets[v * 2];
-                var side2Off = aoOffsets[v * 2 + 1];
-
+                var side1Off = faceAoOffsets[v * 2];
+                var side2Off = faceAoOffsets[v * 2 + 1];
                 var cornerOff = (side1Off.x + side2Off.x, side1Off.y + side2Off.y, side1Off.z + side2Off.z);
 
-                bool side1 = GetVoxel(x + side1Off.x + (int)normal.X, y + side1Off.y + (int)normal.Y, z + side1Off.z + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
-                bool side2 = GetVoxel(x + side2Off.x + (int)normal.X, y + side2Off.y + (int)normal.Y, z + side2Off.z + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
-                bool corner = GetVoxel(x + cornerOff.Item1 + (int)normal.X, y + cornerOff.Item2 + (int)normal.Y, z + cornerOff.Item3 + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
+                bool side1 = GetVoxel(x + side1Off.x + (int)normal.X, y + side1Off.y + (int)normal.Y, z + side1Off.z + (int)normal.Z) != Enum.VoxelType.Empty;
+                bool side2 = GetVoxel(x + side2Off.x + (int)normal.X, y + side2Off.y + (int)normal.Y, z + side2Off.z + (int)normal.Z) != Enum.VoxelType.Empty;
+                bool corner = GetVoxel(x + cornerOff.Item1 + (int)normal.X, y + cornerOff.Item2 + (int)normal.Y, z + cornerOff.Item3 + (int)normal.Z) != Enum.VoxelType.Empty;
 
                 ao[v] = ComputeAO(side1, side2, corner);
             }
 
-            // Flips the quad triangulation to ensure smooth AO gradients
+            // Removed the redundant (short) casts here since List<int> just converts them back to ints!
             if (ao[0] + ao[3] > ao[1] + ao[2])
             {
-                //flipped
-                indices.Add((short)(vertexOffset + 2));
-                indices.Add((short)(vertexOffset + 3));
+                // Flipped
+                indices.Add(vertexOffset + 2);
+                indices.Add(vertexOffset + 3);
                 indices.Add(vertexOffset);
-                indices.Add((short)(vertexOffset + 3));
-                indices.Add((short)(vertexOffset + 1));
+                indices.Add(vertexOffset + 3);
+                indices.Add(vertexOffset + 1);
                 indices.Add(vertexOffset);
             }
             else
             {
-                indices.Add((short)(vertexOffset + 3));
-                indices.Add((short)(vertexOffset + 1));
-                indices.Add((short)(vertexOffset + 2));
-                indices.Add((short)(vertexOffset + 2));
-                indices.Add((short)(vertexOffset + 1));
+                // Normal
+                indices.Add(vertexOffset + 3);
+                indices.Add(vertexOffset + 1);
+                indices.Add(vertexOffset + 2);
+                indices.Add(vertexOffset + 2);
+                indices.Add(vertexOffset + 1);
                 indices.Add(vertexOffset);
             }
 
             for (int v = 0; v < 4; v++)
             {
-                vertices.Add(new VertexPositionNormalTextureLayerAO(positions[v], normal, uvs[v], textureLayer, ao[v]));
+                // Add the local face offset to the block's world position
+                Vector3 finalPos = blockPos + faceVerts[v];
+                vertices.Add(new VertexPositionNormalTextureLayerAO(finalPos, normal, faceUvs[v], textureLayer, ao[v]));
             }
 
             vertexOffset += 4;
@@ -233,20 +199,25 @@ namespace CubeEngine.Engine.Client.World
             return (3 - value) / 3.0f;
         }
 
-        public Voxel GetVoxel(int x, int y, int z)
+        public VoxelType GetVoxel(int x, int y, int z)
         {
-            if (x >= 0 && x < ChunkData.Voxels.GetLength(0) &&
-                y >= 0 && y < ChunkData.Voxels.GetLength(1) &&
-                z >= 0 && z < ChunkData.Voxels.GetLength(2))
+            if (x >= 0 && x < ChunkData.SizeX &&
+                y >= 0 && y < ChunkData.SizeY &&
+                z >= 0 && z < ChunkData.SizeZ)
             {
-                return ChunkData.Voxels[x, y, z];
+                return ChunkData.GetVoxel(x, y, z);
             }
-            else
+
+            if (CubeGameWindow.Instance.CurrentGameScene.Map != null)
             {
-                Voxel v = new Voxel();
-                v.VoxelType = Enum.VoxelType.Empty;
-                return v;
+                int globalX = (int)_chunkData.Position.X + x;
+                int globalY = y; 
+                int globalZ = (int)_chunkData.Position.Y + z; 
+
+                return CubeGameWindow.Instance.CurrentGameScene.Map.GetVoxelGlobal(globalX, globalY, globalZ);
             }
+
+            return Enum.VoxelType.Empty;
         }
 
         public void OnUpdate()
@@ -265,12 +236,10 @@ namespace CubeEngine.Engine.Client.World
 
         public void Remove()
         {
-            ChunkMesh.Dispose();
-        }
-
-        public void UpdateChunk()
-        {
-            ChunkMesh.UpdateMesh(GenChunkMesh(_chunkData));
+            GLActionQueue.Enqueue(() =>
+            {
+                ChunkMesh.Dispose();
+            });
         }
     }
 }
