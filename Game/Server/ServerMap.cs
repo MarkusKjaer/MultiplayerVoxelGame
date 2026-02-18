@@ -132,10 +132,10 @@ namespace CubeEngine.Engine.Server
 
             // Only update if actually changing
             var current = chunk.ChunkData.GetVoxel(cx, y, cz);
-            if (current.VoxelType == type)
+            if (current == type)
                 return;
 
-            chunk.ChunkData.SetVoxel(cx, y, cz, new Voxel { VoxelType = type });
+            chunk.ChunkData.SetVoxel(cx, y, cz, type);
 
             SaveChunk(chunk);
 
@@ -335,10 +335,10 @@ namespace CubeEngine.Engine.Server
 
             foreach (var voxel in data.Voxels)
             {
-                if (!palette.ContainsKey(voxel.VoxelType))
+                if (!palette.ContainsKey((VoxelType)voxel))
                 {
-                    palette[voxel.VoxelType] = reversePalette.Count;
-                    reversePalette.Add(voxel.VoxelType);
+                    palette[(VoxelType)voxel] = reversePalette.Count;
+                    reversePalette.Add((VoxelType)voxel);
                 }
             }
 
@@ -358,7 +358,7 @@ namespace CubeEngine.Engine.Server
 
             foreach (var voxel in data.Voxels)
             {
-                int id = palette[voxel.VoxelType];
+                int id = palette[(VoxelType)voxel];
 
                 buffer |= ((ulong)id << bitsInBuffer);
                 bitsInBuffer += bitsPerBlock;
@@ -426,10 +426,7 @@ namespace CubeEngine.Engine.Server
                 buffer >>= bitsPerBlock;
                 bitsInBuffer -= bitsPerBlock;
 
-                chunkData.Voxels[i] = new Voxel
-                {
-                    VoxelType = palette[paletteIndex]
-                };
+                chunkData.Voxels[i] = (byte)palette[paletteIndex];
             }
 
             return new ServerChunk(chunkData);

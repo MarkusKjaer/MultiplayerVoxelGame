@@ -1,6 +1,7 @@
 ﻿using CubeEngine.Engine.Client.Graphics;
 using CubeEngine.Engine.Client.Graphics.MeshObject;
 using CubeEngine.Engine.Client.Graphics.Window;
+using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Engine.Client.World.Mesh;
 using OpenTK.Mathematics;
 
@@ -104,10 +105,10 @@ namespace CubeEngine.Engine.Client.World
                     for (int k = 0; k < chunkData.SizeZ; k++)
                     {
                         var voxel = chunkData.GetVoxel(i, j, k);
-                        if (voxel.VoxelType == Enum.VoxelType.Empty)
+                        if (voxel == Enum.VoxelType.Empty)
                             continue;
 
-                        int textureLayer = (int)voxel.VoxelType - 1;
+                        int textureLayer = (int)voxel - 1;
                         Vector3 pos = new(i, j, k);
 
                         // 0: Z+, 1: Z-, 2: X+, 3: X-, 4: Y+, 5: Y-
@@ -115,7 +116,7 @@ namespace CubeEngine.Engine.Client.World
                         {
                             Vector3 normal = FaceNormals[faceIndex];
 
-                            if (GetVoxel(i + (int)normal.X, j + (int)normal.Y, k + (int)normal.Z).VoxelType == Enum.VoxelType.Empty)
+                            if (GetVoxel(i + (int)normal.X, j + (int)normal.Y, k + (int)normal.Z) == Enum.VoxelType.Empty)
                             {
                                 AddFace(vertices, indices, ref vertexOffset, pos, normal, textureLayer, i, j, k, faceIndex);
                             }
@@ -147,9 +148,9 @@ namespace CubeEngine.Engine.Client.World
                 var side2Off = faceAoOffsets[v * 2 + 1];
                 var cornerOff = (side1Off.x + side2Off.x, side1Off.y + side2Off.y, side1Off.z + side2Off.z);
 
-                bool side1 = GetVoxel(x + side1Off.x + (int)normal.X, y + side1Off.y + (int)normal.Y, z + side1Off.z + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
-                bool side2 = GetVoxel(x + side2Off.x + (int)normal.X, y + side2Off.y + (int)normal.Y, z + side2Off.z + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
-                bool corner = GetVoxel(x + cornerOff.Item1 + (int)normal.X, y + cornerOff.Item2 + (int)normal.Y, z + cornerOff.Item3 + (int)normal.Z).VoxelType != Enum.VoxelType.Empty;
+                bool side1 = GetVoxel(x + side1Off.x + (int)normal.X, y + side1Off.y + (int)normal.Y, z + side1Off.z + (int)normal.Z) != Enum.VoxelType.Empty;
+                bool side2 = GetVoxel(x + side2Off.x + (int)normal.X, y + side2Off.y + (int)normal.Y, z + side2Off.z + (int)normal.Z) != Enum.VoxelType.Empty;
+                bool corner = GetVoxel(x + cornerOff.Item1 + (int)normal.X, y + cornerOff.Item2 + (int)normal.Y, z + cornerOff.Item3 + (int)normal.Z) != Enum.VoxelType.Empty;
 
                 ao[v] = ComputeAO(side1, side2, corner);
             }
@@ -198,7 +199,7 @@ namespace CubeEngine.Engine.Client.World
             return (3 - value) / 3.0f;
         }
 
-        public Voxel GetVoxel(int x, int y, int z)
+        public VoxelType GetVoxel(int x, int y, int z)
         {
             if (x >= 0 && x < ChunkData.SizeX &&
                 y >= 0 && y < ChunkData.SizeY &&
@@ -216,7 +217,7 @@ namespace CubeEngine.Engine.Client.World
                 return CubeGameWindow.Instance.CurrentGameScene.Map.GetVoxelGlobal(globalX, globalY, globalZ);
             }
 
-            return new Voxel { VoxelType = Enum.VoxelType.Empty };
+            return Enum.VoxelType.Empty;
         }
 
         public void OnUpdate()

@@ -63,10 +63,7 @@ namespace CubeEngine.Engine.Client.World
                                               y < groundHeight ? VoxelType.Stone :
                                               VoxelType.Empty;
 
-                        chunk.SetVoxel(x, y, z, new Voxel
-                        {
-                            VoxelType = voxelType
-                        });
+                        chunk.SetVoxel(x, y, z, voxelType);
                     }
                 }
             }

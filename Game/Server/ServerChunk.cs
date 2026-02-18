@@ -24,7 +24,7 @@ namespace CubeEngine.Engine.Server
             _chunkData = chunkData;
         }
 
-        public Voxel GetVoxel(int x, int y, int z)
+        public VoxelType GetVoxel(int x, int y, int z)
         {
             if (x >= 0 && x < ChunkData.SizeX &&
                 y >= 0 && y < ChunkData.SizeY &&
@@ -34,9 +34,7 @@ namespace CubeEngine.Engine.Server
             }
             else
             {
-                Voxel v = new Voxel();
-                v.VoxelType = VoxelType.Empty;
-                return v;
+                return VoxelType.Empty;
             }
         }
     }

@@ -1,10 +1,11 @@
-﻿using OpenTK.Mathematics;
+﻿using CubeEngine.Engine.Client.World.Enum;
+using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Client.World
 {
     public class ChunkData
     {
-        public Voxel[] Voxels { get; private set; }
+        public byte[] Voxels { get; private set; }
         public int SizeX { get; private set; }
         public int SizeY { get; private set; }
         public int SizeZ { get; private set; }
@@ -16,7 +17,7 @@ namespace CubeEngine.Engine.Client.World
             SizeX = sizeX;
             SizeY = sizeY;
             SizeZ = sizeZ;
-            Voxels = new Voxel[sizeX * sizeY * sizeZ];
+            Voxels = new byte[sizeX * sizeY * sizeZ];
             Position = position;
         }
 
@@ -29,11 +30,11 @@ namespace CubeEngine.Engine.Client.World
 
             return x + SizeX * (y + SizeY * z);
         }
-        public Voxel GetVoxel(int x, int y, int z)
-            => Voxels[Index(x, y, z)];
-        public void SetVoxel(int x, int y, int z, Voxel voxel)
+        public VoxelType GetVoxel(int x, int y, int z)
+            => (VoxelType)Voxels[Index(x, y, z)];
+        public void SetVoxel(int x, int y, int z, VoxelType voxel)
         {
-            Voxels[Index(x, y, z)] = voxel;
+            Voxels[Index(x, y, z)] = (byte)voxel;
             IsDirty = true;
         }
         public Vector2 Position { get; private set; }

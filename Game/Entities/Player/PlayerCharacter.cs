@@ -145,7 +145,7 @@ namespace CubeEngine.Engine.Entities.Player
 
                 if (y >= 0 && y < data.SizeY)
                 {
-                    return data.GetVoxel(lx, y, lz).VoxelType != Client.World.Enum.VoxelType.Empty;
+                    return data.GetVoxel(lx, y, lz) != Client.World.Enum.VoxelType.Empty;
                 }
             }
 

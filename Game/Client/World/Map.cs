@@ -98,7 +98,7 @@ namespace CubeEngine.Engine.Client.World
             }
         }
 
-        public Voxel GetVoxelGlobal(int globalX, int globalY, int globalZ)
+        public VoxelType GetVoxelGlobal(int globalX, int globalY, int globalZ)
         {
             const int CHUNK_SIZE = ChunkSettings.Width;
 
@@ -113,7 +113,7 @@ namespace CubeEngine.Engine.Client.World
                 localZ < 0 || localZ >= CHUNK_SIZE ||
                 localY < 0 || localY >= 80)
             {
-                return new Voxel { VoxelType = VoxelType.Empty };
+                return VoxelType.Empty;
             }
 
             Vector2 chunkPos = new Vector2(chunkX, chunkZ);
@@ -126,7 +126,7 @@ namespace CubeEngine.Engine.Client.World
                 }
             }
 
-            return new Voxel { VoxelType = VoxelType.Empty };
+            return VoxelType.Empty;
         }
     }
 }

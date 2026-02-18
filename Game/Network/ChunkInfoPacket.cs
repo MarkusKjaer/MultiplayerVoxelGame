@@ -57,10 +57,7 @@ namespace CubeEngine.Engine.Network
                     int y = (voxelIndex / ChunkSize) % MapHeight;
                     int z = voxelIndex % ChunkSize;
 
-                    ChunkData.SetVoxel(x, y, z, new Voxel
-                    {
-                        VoxelType = (VoxelType)type
-                    });
+                    ChunkData.SetVoxel(x, y, z, (VoxelType)type);
 
                     voxelIndex++;
                 }
@@ -98,7 +95,7 @@ namespace CubeEngine.Engine.Network
                 {
                     for (int z = 0; z < ChunkSize; z++)
                     {
-                        var current = ChunkData.GetVoxel(x, y, z).VoxelType;
+                        var current = ChunkData.GetVoxel(x, y, z);
 
                         if (lastType == null)
                         {

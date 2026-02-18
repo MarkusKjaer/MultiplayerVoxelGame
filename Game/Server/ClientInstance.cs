@@ -165,7 +165,7 @@ namespace CubeEngine.Engine.Server
 
                 if (y >= 0 && y < data.ChunkData.SizeY)
                 {
-                    return data.GetVoxel(lx, y, lz).VoxelType != VoxelType.Empty;
+                    return data.GetVoxel(lx, y, lz) != VoxelType.Empty;
                 }
             }
 
