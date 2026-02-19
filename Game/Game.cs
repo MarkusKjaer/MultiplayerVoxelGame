@@ -28,18 +28,29 @@ namespace CubeEngine.Engine
         {
             if (role == NetworkRole.Server || role == NetworkRole.Host)
             {
-                Noise.LoadHeightmap();
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        Noise.LoadHeightmap();
+                        Server = new GameServer(tcpPort, udpPort);
 
-                Server = new GameServer(tcpPort, udpPort);
-                await Server.StartAsync();
-                Console.WriteLine($"Server started on TCP:{tcpPort} UDP:{udpPort}");
+                        Console.WriteLine($"[Server Thread] Starting on TCP:{tcpPort} UDP:{udpPort}");
+                        await Server.StartAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Server Error]: {ex.Message}");
+                    }
+                });
             }
 
             if (role == NetworkRole.Client || role == NetworkRole.Host)
             {
                 Client = new GameClient(ip, tcpPort, udpPort);
+
+                Console.WriteLine($"[Client Thread] Connecting to {ip}:{tcpPort}/{udpPort}...");
                 await Client.StartAsync();
-                Console.WriteLine($"Client connecting to {ip}:{tcpPort}/{udpPort}");
             }
         }
 

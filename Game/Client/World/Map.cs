@@ -57,7 +57,7 @@ namespace CubeEngine.Engine.Client.World
                 }
                 else
                 {
-                    newChunk = new Chunk(chunkData, _material); 
+                    newChunk = new Chunk(chunkData, _material, this);
                     CurrentChunks.Add(chunkData.Position, newChunk);
                 }
 
@@ -127,6 +127,29 @@ namespace CubeEngine.Engine.Client.World
             }
 
             return VoxelType.Empty;
+        }
+
+        public ChunkData[] GetNeighborData(Vector2 centerPosition)
+        {
+            ChunkData[] neighbors = new ChunkData[8];
+            float w = ChunkSettings.Width;
+
+            lock (_chunkLock)
+            {
+                // Direct Sides
+                if (CurrentChunks.TryGetValue(centerPosition + new Vector2(-w, 0), out var c0)) neighbors[0] = c0.ChunkData; // X-
+                if (CurrentChunks.TryGetValue(centerPosition + new Vector2(w, 0), out var c1)) neighbors[1] = c1.ChunkData; // X+
+                if (CurrentChunks.TryGetValue(centerPosition + new Vector2(0, -w), out var c2)) neighbors[2] = c2.ChunkData; // Z-
+                if (CurrentChunks.TryGetValue(centerPosition + new Vector2(0, w), out var c3)) neighbors[3] = c3.ChunkData; // Z+
+
+                // Diagonals (Crucial for corner AO across chunk borders)
+                if (CurrentChunks.TryGetValue(centerPosition + new Vector2(-w, -w), out var c4)) neighbors[4] = c4.ChunkData; // X- Z-
+                if (CurrentChunks.TryGetValue(centerPosition + new Vector2(w, -w), out var c5)) neighbors[5] = c5.ChunkData; // X+ Z-
+                if (CurrentChunks.TryGetValue(centerPosition + new Vector2(-w, w), out var c6)) neighbors[6] = c6.ChunkData; // X- Z+
+                if (CurrentChunks.TryGetValue(centerPosition + new Vector2(w, w), out var c7)) neighbors[7] = c7.ChunkData; // X+ Z+
+            }
+
+            return neighbors;
         }
 
         public void RemoveOutOfRangeChunks(Vector3 playerPosition, int chunkRadius)
