@@ -154,7 +154,9 @@ namespace CubeEngine.Engine.Entities.Player
 
                 if (y >= 0 && y < data.SizeY)
                 {
-                    return data.GetVoxel(lx, y, lz) != Client.World.Enum.VoxelType.Empty;
+                    var isNotSolid = data.GetVoxel(lx, y, lz) == Client.World.Enum.VoxelType.Empty;
+                    isNotSolid |= data.GetVoxel(lx, y, lz) == Client.World.Enum.VoxelType.Water;
+                    return !isNotSolid;
                 }
             }
 

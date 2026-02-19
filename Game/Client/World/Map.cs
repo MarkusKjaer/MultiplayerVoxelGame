@@ -16,20 +16,24 @@ namespace CubeEngine.Engine.Client.World
 
         public Dictionary<Vector2, Chunk> CurrentChunks = new();
 
-        private Material _material;
+        private Material _solidMaterial;
+        private Material _waterMaterial;
 
-        public Map(int chunkSize, int maxWorldHeight, int seed, TextureArrayManager textureArrayManager)
+        public Map(int chunkSize, int maxWorldHeight, int seed, TextureArrayManager solidTextureArrayManager, TextureManager waterTextureManager)
         {
-            string vertShaderPath = AssetsManager.Instance.LoadedAssets[("MapChunkShader", AssetType.VERT)].FilePath;
-            string fragShaderPath = AssetsManager.Instance.LoadedAssets[("MapChunkShader", AssetType.FRAG)].FilePath;
+            string solidVertShaderPath = AssetsManager.Instance.LoadedAssets[("MapChunkShader", AssetType.VERT)].FilePath;
+            string solidFragShaderPath = AssetsManager.Instance.LoadedAssets[("MapChunkShader", AssetType.FRAG)].FilePath;
+            string waterVertShaderPath = AssetsManager.Instance.LoadedAssets[("WaterChunkShader", AssetType.VERT)].FilePath;
+            string waterFragShaderPath = AssetsManager.Instance.LoadedAssets[("WaterChunkShader", AssetType.FRAG)].FilePath;
 
-            if (!File.Exists(vertShaderPath) || !File.Exists(fragShaderPath))
+            if (!File.Exists(solidVertShaderPath) || !File.Exists(solidFragShaderPath))
             {
                 throw new FileNotFoundException("Shader file(s) not found.",
-                    !File.Exists(vertShaderPath) ? vertShaderPath : fragShaderPath);
+                    !File.Exists(solidVertShaderPath) ? solidVertShaderPath : solidFragShaderPath);
             }
 
-            _material = new(vertShaderPath, fragShaderPath, textureArrayManager);
+            _solidMaterial = new(solidVertShaderPath, solidFragShaderPath, solidTextureArrayManager);
+            _waterMaterial = new(waterVertShaderPath, waterFragShaderPath, waterTextureManager);
 
             GameClient.Instance.ServerMessage += OnServerMessage;
         }
@@ -57,7 +61,7 @@ namespace CubeEngine.Engine.Client.World
                 }
                 else
                 {
-                    newChunk = new Chunk(chunkData, _material, this);
+                    newChunk = new Chunk(chunkData, _solidMaterial, _waterMaterial, this);
                     CurrentChunks.Add(chunkData.Position, newChunk);
                 }
 
@@ -87,15 +91,30 @@ namespace CubeEngine.Engine.Client.World
             }
         }
 
-        public void Render()
+        public void Render(Vector3 cameraPosition)
         {
+            List<Chunk> chunkList;
             lock (_chunkLock)
             {
-                foreach (var chunk in CurrentChunks.Values)
-                {
-                    chunk.Render();
-                }
+                chunkList = new List<Chunk>(CurrentChunks.Values);
             }
+
+            // Draw all solid meshes first (no sorting needed, they write to depth buffer)
+            foreach (var chunk in chunkList)
+                chunk.SolidMesh.Render();
+
+            // Sort water chunks back-to-front from camera
+            chunkList.Sort((a, b) =>
+            {
+                var posA = new Vector3(a.ChunkData.Position.X, 0, a.ChunkData.Position.Y);
+                var posB = new Vector3(b.ChunkData.Position.X, 0, b.ChunkData.Position.Y);
+                float distA = (posA - cameraPosition).LengthSquared;
+                float distB = (posB - cameraPosition).LengthSquared;
+                return distB.CompareTo(distA); // farthest first
+            });
+
+            foreach (var chunk in chunkList)
+                chunk.WaterMesh.Render();
         }
 
         public VoxelType GetVoxelGlobal(int globalX, int globalY, int globalZ)

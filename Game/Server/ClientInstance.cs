@@ -165,7 +165,9 @@ namespace CubeEngine.Engine.Server
 
                 if (y >= 0 && y < data.ChunkData.SizeY)
                 {
-                    return data.GetVoxel(lx, y, lz) != VoxelType.Empty;
+                    var isNotSolid = data.GetVoxel(lx, y, lz) == Client.World.Enum.VoxelType.Empty;
+                    isNotSolid |= data.GetVoxel(lx, y, lz) == Client.World.Enum.VoxelType.Water;
+                    return !isNotSolid;
                 }
             }
 

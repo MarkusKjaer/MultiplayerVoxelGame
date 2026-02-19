@@ -1,6 +1,7 @@
 ﻿using CubeEngine.Engine.Client.World;
 using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Engine.Network;
+using MultiplayerVoxelGame.Game.Client.World.WorldGeneration;
 using MultiplayerVoxelGame.Util.Settings;
 using OpenTK.Mathematics;
 using System.Collections.Concurrent;
@@ -19,7 +20,7 @@ namespace CubeEngine.Engine.Server
 
         public ConcurrentDictionary<Vector2, ChunkInfo> CurrentChunks = new();
 
-        private WorldGen _worldGen;
+        private WorldGeneration _worldGen;
 
         public int ChunkSize { get; private set; }
         public int MaxWorldHeight { get; private set; }
@@ -37,11 +38,11 @@ namespace CubeEngine.Engine.Server
 
             if (seed == 0)
             {
-                _worldGen = new WorldGen();
+                _worldGen = new WorldGeneration();
             }
             else
             {
-                _worldGen = new WorldGen(seed);
+                _worldGen = new WorldGeneration(seed);
             }
 
             GameServer.Instance.ClientMessage += OnClientMessage;

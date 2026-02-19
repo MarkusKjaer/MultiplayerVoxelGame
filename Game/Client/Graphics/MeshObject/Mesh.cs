@@ -1,5 +1,6 @@
 ﻿using CubeEngine.Engine.Client.Graphics.Window;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace CubeEngine.Engine.Client.Graphics.MeshObject
 {
@@ -30,6 +31,16 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
             GL.BindVertexArray(vertexArray.VertexArrayHandle);
 
             GL.DrawElements(PrimitiveType.Triangles, _meshInfo.IndexCount, DrawElementsType.UnsignedInt, 0);
+        }
+
+        public override void Update(Camera camera, int windowWidth, int windowheight)
+        {
+            shaderProgram.SetUniform("lightPos", new Vector3(1000, 500, 2000));
+            shaderProgram.SetUniform("lightColor", 1.0f, 1.0f, 1.0f);
+            shaderProgram.SetUniform("ambient", 0.1f, 0.1f, 0.1f);
+            shaderProgram.SetUniform("objectColor", 1.0f, 1.0f, 1.0f);
+
+            base.Update(camera, windowWidth, windowheight);
         }
     }
 

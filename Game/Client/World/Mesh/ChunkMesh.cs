@@ -51,6 +51,11 @@ namespace CubeEngine.Engine.Client.World.Mesh
             if (_meshInfo.IndexCount == 0)
                 return;
 
+            shaderProgram.SetUniform("lightPos", new Vector3(1000, 500, 2000));
+            shaderProgram.SetUniform("lightColor", 1.0f, 1.0f, 1.0f);
+            shaderProgram.SetUniform("ambient", 0.1f, 0.1f, 0.1f);
+            shaderProgram.SetUniform("objectColor", 1.0f, 1.0f, 1.0f);
+
             base.Update(camera, windowWidth, windowheight);
         }
 

@@ -6,7 +6,8 @@ namespace CubeEngine.Util
     {
         private CubeGameWindow _window;
 
-        public static double DeltaTime { get; set; }
+        public static double DeltaTime { get; private set; }
+        public static double GlobalTime { get; private set; } = 0;
 
         public Time(CubeGameWindow gameWindow)
         {
@@ -17,6 +18,7 @@ namespace CubeEngine.Util
         private void NewDeltaTime(double deltaTime)
         {
             DeltaTime = deltaTime;
+            GlobalTime += deltaTime;
         }
     }
 }

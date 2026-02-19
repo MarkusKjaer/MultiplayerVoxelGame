@@ -55,14 +55,10 @@ namespace CubeEngine.Engine.Client.Graphics.MeshObject
                 0.1f, 1000.0f
             );
 
-            shaderProgram.SetUnitform("model", Model);
-            shaderProgram.SetUnitform("view", view);
-            shaderProgram.SetUnitform("projection", projection);
+            shaderProgram.SetUniform("model", Model);
+            shaderProgram.SetUniform("view", view);
+            shaderProgram.SetUniform("projection", projection);
 
-            shaderProgram.SetUnitform("lightPos", new Vector3(1000, 500, 2000));
-            shaderProgram.SetUnitform("lightColor", 1.0f, 1.0f, 1.0f);
-            shaderProgram.SetUnitform("ambient", 0.1f, 0.1f, 0.1f);
-            shaderProgram.SetUnitform("objectColor", 1.0f, 1.0f, 1.0f);
         }
 
         public virtual void Render()
