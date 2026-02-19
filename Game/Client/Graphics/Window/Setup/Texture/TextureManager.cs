@@ -21,7 +21,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window.Setup.Texture
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
             StbImage.stbi_set_flip_vertically_on_load(1);
 
             ImageResult image = ImageResult.FromStream(File.OpenRead(textureFilePath), ColorComponents.RedGreenBlueAlpha);
@@ -38,14 +38,14 @@ namespace CubeEngine.Engine.Client.Graphics.Window.Setup.Texture
 
         public void Dispose()
         {
-            if (!disposed)
-            {
+            if (disposed)
                 return;
-            }
 
-            GL.BindTexture(TextureTarget.Texture2D, TextureID);
             GL.DeleteTexture(TextureID);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+            TextureID = 0;
+
+            disposed = true;
+            GC.SuppressFinalize(this);
         }
     }
 }

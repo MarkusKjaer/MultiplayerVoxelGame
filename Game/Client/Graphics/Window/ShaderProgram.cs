@@ -19,7 +19,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
 
     public sealed class ShaderProgram : IDisposable
     {
-        private bool dispored;
+        private bool disposed;
 
         public readonly int ShaderProgramHandle;
         public readonly int VertexShaderHandle;
@@ -30,7 +30,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
 
         public ShaderProgram(string vertexShaderCode, string pixelShaderCode)
         {
-            dispored = false;
+            disposed = false;
 
             if (!CompileVertexShader(vertexShaderCode, out VertexShaderHandle, out string vertexShaderCompileError))
             {
@@ -48,14 +48,9 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             attributes = CreateAttributeList(ShaderProgramHandle);
         }
 
-        ~ShaderProgram()
-        {
-            Dispose();
-        }
-
         public void Dispose()
         {
-            if (dispored)
+            if (disposed)
             {
                 return;
             }
@@ -66,7 +61,7 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             GL.UseProgram(0);
             GL.DeleteProgram(ShaderProgramHandle);
 
-            dispored = true;
+            disposed = true;
             GC.SuppressFinalize(this);
         }
 
@@ -84,9 +79,9 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             return result;
         }
 
-        public void SetUnitform(string name, float v1)
+        public void SetUniform(string name, float v1)
         {
-            if (!GetShaderUnitform(name, out ShaderUniform uniform))
+            if (!GetShaderUniform(name, out ShaderUniform uniform))
             {
                 throw new ArgumentException("Name was not found: " + name);
             }
@@ -101,9 +96,9 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             GL.UseProgram(0);
         }
 
-        public void SetUnitform(string name, float v1, float v2)
+        public void SetUniform(string name, float v1, float v2)
         {
-            if (!GetShaderUnitform(name, out ShaderUniform uniform))
+            if (!GetShaderUniform(name, out ShaderUniform uniform))
             {
                 throw new ArgumentException("Name was not found: " + name);
             }
@@ -118,9 +113,9 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             GL.UseProgram(0);
         }
 
-        public void SetUnitform(string name, float v1, float v2, float v3)
+        public void SetUniform(string name, float v1, float v2, float v3)
         {
-            if (!GetShaderUnitform(name, out ShaderUniform uniform))
+            if (!GetShaderUniform(name, out ShaderUniform uniform))
             {
                 throw new ArgumentException("Name was not found: ", name);
             }
@@ -135,14 +130,14 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             GL.UseProgram(0);
         }
 
-        public void SetUnitform(string name, Vector3 vector)
+        public void SetUniform(string name, Vector3 vector)
         {
-            SetUnitform(name, vector.X, vector.Y, vector.Z);    
+            SetUniform(name, vector.X, vector.Y, vector.Z);    
         }
 
-        public void SetUnitform(string name, Matrix4 matrix)
+        public void SetUniform(string name, Matrix4 matrix)
         {
-            if (!GetShaderUnitform(name, out ShaderUniform uniform))
+            if (!GetShaderUniform(name, out ShaderUniform uniform))
             {
                 throw new ArgumentException("Name was not found: " + name);
             }
@@ -157,20 +152,17 @@ namespace CubeEngine.Engine.Client.Graphics.Window
             GL.UseProgram(0);
         }
 
-        private bool GetShaderUnitform(string name, out ShaderUniform uniform)
+        private bool GetShaderUniform(string name, out ShaderUniform uniform)
         {
-            uniform = new ShaderUniform();
-
-            for (int i = 0; i < uniforms.Length; i++)
+            foreach (var u in uniforms)
             {
-                uniform = uniforms[i];
-
-                if (name == uniform.Name)
+                if (u.Name == name)
                 {
+                    uniform = u;
                     return true;
                 }
             }
-
+            uniform = default; 
             return false;
         }
 

@@ -1,22 +1,23 @@
-﻿using CubeEngine.Engine.Client.World.Enum;
+﻿using CubeEngine.Engine.Client.World;
+using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Util;
 using OpenTK.Mathematics;
 
-namespace CubeEngine.Engine.Client.World
+namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration
 {
-    public class WorldGen
+    public class WorldGeneration
     {
         int _seed;
 
         private int _maxWorldHeight = 64;
 
-        public WorldGen(int seed) 
+        public WorldGeneration(int seed) 
         {
             _seed = seed;
             Random rand = new(_seed);
         }
 
-        public WorldGen()
+        public WorldGeneration()
         {
             _seed = Guid.NewGuid().GetHashCode();
             Random rand = new(_seed);
@@ -36,9 +37,12 @@ namespace CubeEngine.Engine.Client.World
             return chunks;
         }
 
+        private int _seaLevel = 32;
+
         private ChunkData GenChunk(int chunkSize, Vector2 chunkIndex)
         {
-            ChunkData chunk = new(chunkSize, _maxWorldHeight, chunkSize, new Vector2(chunkIndex.X * chunkSize, chunkIndex.Y * chunkSize));
+            ChunkData chunk = new(chunkSize, _maxWorldHeight, chunkSize,
+                                  new Vector2(chunkIndex.X * chunkSize, chunkIndex.Y * chunkSize));
 
             for (int x = 0; x < chunkSize; x++)
             {
@@ -49,19 +53,31 @@ namespace CubeEngine.Engine.Client.World
 
                     float scale = 0.01f;
 
-                    float height = Noise.ImageHeight(
-                        worldX * scale,
-                        worldZ * scale
-                    ) * _maxWorldHeight;
+                    float height = Noise.ImageHeight(worldX * scale, worldZ * scale) * _maxWorldHeight;
 
                     int groundHeight = (int)MathF.Round(height);
                     groundHeight = Math.Clamp(groundHeight, 0, _maxWorldHeight - 1);
 
                     for (int y = 0; y < _maxWorldHeight; y++)
                     {
-                        VoxelType voxelType = y == groundHeight ? VoxelType.Grass :
-                                              y < groundHeight ? VoxelType.Stone :
-                                              VoxelType.Empty;
+                        VoxelType voxelType;
+
+                        if (y == groundHeight)
+                        {
+                            voxelType = groundHeight < _seaLevel ? VoxelType.Stone : VoxelType.Grass;
+                        }
+                        else if (y < groundHeight)
+                        {
+                            voxelType = VoxelType.Stone;
+                        }
+                        else if (y <= _seaLevel)
+                        {
+                            voxelType = VoxelType.Water;
+                        }
+                        else
+                        {
+                            voxelType = VoxelType.Empty;
+                        }
 
                         chunk.SetVoxel(x, y, z, voxelType);
                     }
@@ -70,8 +86,5 @@ namespace CubeEngine.Engine.Client.World
 
             return chunk;
         }
-
-
-
     }
 }

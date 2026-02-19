@@ -61,7 +61,7 @@ namespace CubeEngine.Engine
             CubeGameWindow gameWindow = new(CurrentGameScene);
 
             gameWindow.VSync = OpenTK.Windowing.Common.VSyncMode.On;
-                
+
             PlayerCharacter player = new(new(0, 0, 0));
             PlayerCamera camera = new(new Vector3(0, 1.6f, 0), player)
             {
@@ -72,8 +72,9 @@ namespace CubeEngine.Engine
             camera.Instantiate();
             CurrentGameScene.ActiveCamera = camera;
 
-            TextureArrayManager textureArrayManagerForMap = LoadWorldTextures();
-            CurrentGameScene.Map = new(ChunkSettings.Width, ChunkSettings.Height, 1, textureArrayManagerForMap);
+            var textureArrayManagerForMap = LoadWorldTextures();
+            var waterTexture = LoadWaterTexture();
+            CurrentGameScene.Map = new(ChunkSettings.Width, ChunkSettings.Height, 1, textureArrayManagerForMap, waterTexture);
 
             PlayerRenderManager playerRenderManager = new();
 
@@ -102,6 +103,12 @@ namespace CubeEngine.Engine
             }
 
             return new TextureArrayManager(textureNames.ToArray(), 1, 1);
+        }
+
+        private TextureManager LoadWaterTexture()
+        {
+            string waterTexturePath = AssetsManager.Instance.LoadedAssets[("Water", AssetType.PNG)].FilePath;
+            return new TextureManager(waterTexturePath);
         }
     }
 }

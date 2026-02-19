@@ -1,4 +1,5 @@
-﻿using CubeEngine.Engine.Client.Graphics.Window;
+﻿using CubeEngine.Engine.Client;
+using CubeEngine.Engine.Client.Graphics.Window;
 using CubeEngine.Engine.Client.World;
 
 namespace CubeEngine.Engine
@@ -16,7 +17,7 @@ namespace CubeEngine.Engine
         public override void Render()
         {
             base.Render();
-            Map?.Render();
+            Map?.Render(CubeGameWindow.Instance.CurrentGameScene.ActiveCamera.GlobalPosition);
         }
     }
 }
