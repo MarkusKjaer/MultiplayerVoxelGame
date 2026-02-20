@@ -109,6 +109,25 @@ namespace CubeEngine.Engine.Client.World
 
             int[] chunkDimensions = { chunkData.SizeX, chunkData.SizeY, chunkData.SizeZ };
 
+            int sizeX = chunkData.SizeX;
+            int sizeY = chunkData.SizeY;
+            int sizeZ = chunkData.SizeZ;
+
+            int paddedX = sizeX + 2;
+            int paddedY = sizeY + 2;
+            int paddedZ = sizeZ + 2;
+
+            VoxelType[,,] voxels = new VoxelType[paddedX, paddedY, paddedZ];
+
+            for (int y = 0; y < sizeY; y++)
+                for (int z = -1; z <= sizeZ; z++)
+                    for (int x = -1; x <= sizeX; x++)
+                    {
+                        voxels[x + 1, y + 1, z + 1] =
+                            GetVoxelWithNeighbors(x, y, z, chunkData, neighbors);
+                    }
+
+
             // Axis: 0=X, 1=Y, 2=Z
             for (int sliceAxis = 0; sliceAxis < 3; sliceAxis++)
             {
@@ -130,8 +149,9 @@ namespace CubeEngine.Engine.Client.World
                     {
                         for (voxelPos[axisU] = 0; voxelPos[axisU] < chunkDimensions[axisU]; voxelPos[axisU]++)
                         {
-                            VoxelType currentVoxel = VoxelAt(chunkData, neighbors, voxelPos[0], voxelPos[1], voxelPos[2]);
-                            VoxelType adjacentVoxel = VoxelAt(chunkData, neighbors, voxelPos[0] + forwardDirection[0], voxelPos[1] + forwardDirection[1], voxelPos[2] + forwardDirection[2]);
+                            VoxelType currentVoxel = voxels[voxelPos[0] + 1, voxelPos[1] + 1, voxelPos[2] + 1];
+
+                            VoxelType adjacentVoxel = voxels[voxelPos[0] + forwardDirection[0] + 1, voxelPos[1] + forwardDirection[1] + 1, voxelPos[2] + forwardDirection[2] + 1];
 
                             bool isPositiveFace = !IsTransparent(currentVoxel) && IsTransparent(adjacentVoxel);
                             bool isNegativeFace = !IsTransparent(adjacentVoxel) && IsTransparent(currentVoxel);
@@ -162,24 +182,74 @@ namespace CubeEngine.Engine.Client.World
 
                                 // Compute AO for the 4 vertices
                                 float[] ao = new float[4];
+
+                                
+
                                 var currentFaceAoOffsets = AoOffsets[faceIndex];
 
                                 int checkX = solidPos[0] + normal[0];
                                 int checkY = solidPos[1] + normal[1];
                                 int checkZ = solidPos[2] + normal[2];
 
+                                (int dx1, int dy1, int dz1, int dx2, int dy2, int dz2)[] vertexOffsets;
+
+                                // Map vertices based on face normal
+                                switch (sliceAxis)
+                                {
+                                    case 0: // X face
+                                        vertexOffsets = new (int, int, int, int, int, int)[]
+                                        {
+                                            (0,-1,0, 0,0,-1), // bottom-left
+                                            (0,1,0, 0,0, -1), // bottom-right
+                                            (0, -1,0, 0,0,1), // top-left
+                                            (0, 1,0, 0,0, 1)  // top-right
+                                        };
+                                        break;
+                                    case 1: // Y face (top/bottom)
+                                        vertexOffsets = new (int, int, int, int, int, int)[]
+                                        {
+                                            (-1,0,0, 0,0,-1), // bottom-left
+                                            (-1,0,0, 0,0, 1), // bottom-right
+                                            ( 1,0,0, 0,0,-1), // top-left
+                                            ( 1,0,0, 0,0, 1)  // top-right
+                                        };
+                                        break;
+                                    case 2: // Z face
+                                        vertexOffsets = new (int, int, int, int, int, int)[]
+                                        {
+                                            (-1,0,0, 0,-1,0), // bottom-left
+                                            ( 1,0,0, 0,-1,0), // bottom-right
+                                            (-1,0,0, 0, 1,0), // top-left
+                                            ( 1,0,0, 0, 1,0)  // top-right
+                                        };
+                                        break;
+                                    default:
+                                        vertexOffsets = Array.Empty<(int, int, int, int, int, int)>();
+                                        break;
+                                }
+
+                                // Adjust dynamically based on face axis
                                 for (int v = 0; v < 4; v++)
                                 {
-                                    var side1Off = currentFaceAoOffsets[v * 2];
-                                    var side2Off = currentFaceAoOffsets[v * 2 + 1];
-                                    var cornerOff = (side1Off.x + side2Off.x, side1Off.y + side2Off.y, side1Off.z + side2Off.z);
+                                    int sx = vertexOffsets[v].Item1;
+                                    int sy = vertexOffsets[v].Item2;
+                                    int sz = vertexOffsets[v].Item3;
 
-                                    bool side1 = !IsTransparent(VoxelAt(chunkData, neighbors, checkX + side1Off.x, checkY + side1Off.y, checkZ + side1Off.z));
-                                    bool side2 = !IsTransparent(VoxelAt(chunkData, neighbors, checkX + side2Off.x, checkY + side2Off.y, checkZ + side2Off.z));
-                                    bool corner = !IsTransparent(VoxelAt(chunkData, neighbors, checkX + cornerOff.Item1, checkY + cornerOff.Item2, checkZ + cornerOff.Item3));
+                                    int sx2 = vertexOffsets[v].Item4;
+                                    int sy2 = vertexOffsets[v].Item5;
+                                    int sz2 = vertexOffsets[v].Item6;
+
+                                    int cx = sx + sx2;
+                                    int cy = sy + sy2;
+                                    int cz = sz + sz2;
+
+                                    bool side1 = !IsTransparent(voxels[checkX + sx + 1, checkY + sy + 1, checkZ + sz + 1]);
+                                    bool side2 = !IsTransparent(voxels[checkX + sx2 + 1, checkY + sy2 + 1, checkZ + sz2 + 1]);
+                                    bool corner = !IsTransparent(voxels[checkX + cx + 1, checkY + cy + 1, checkZ + cz + 1]);
 
                                     ao[v] = ComputeAO(side1, side2, corner);
                                 }
+
 
                                 // Store in Mask
                                 faceMask[maskIndex++] = new MaskData
@@ -282,6 +352,24 @@ namespace CubeEngine.Engine.Client.World
 
             int[] chunkDimensions = { chunkData.SizeX, chunkData.SizeY, chunkData.SizeZ };
 
+            int sizeX = chunkData.SizeX;
+            int sizeY = chunkData.SizeY;
+            int sizeZ = chunkData.SizeZ;
+
+            int paddedX = sizeX + 2;
+            int paddedY = sizeY + 2;
+            int paddedZ = sizeZ + 2;
+
+            VoxelType[,,] voxels = new VoxelType[paddedX, paddedY, paddedZ];
+
+            for (int y = 0; y < sizeY; y++)
+                for (int z = -1; z <= sizeZ; z++)
+                    for (int x = -1; x <= sizeX; x++)
+                    {
+                        voxels[x + 1, y + 1, z + 1] =
+                            GetVoxelWithNeighbors(x, y, z, chunkData, neighbors);
+                    }
+
             for (int sliceAxis = 0; sliceAxis < 3; sliceAxis++)
             {
                 int axisU = (sliceAxis + 1) % 3;
@@ -302,8 +390,8 @@ namespace CubeEngine.Engine.Client.World
                     {
                         for (voxelPos[axisU] = 0; voxelPos[axisU] < chunkDimensions[axisU]; voxelPos[axisU]++)
                         {
-                            VoxelType currentVoxel = VoxelAt(chunkData, neighbors, voxelPos[0], voxelPos[1], voxelPos[2]);
-                            VoxelType adjacentVoxel = VoxelAt(chunkData, neighbors, voxelPos[0] + forwardDirection[0], voxelPos[1] + forwardDirection[1], voxelPos[2] + forwardDirection[2]);
+                            VoxelType currentVoxel = voxels[voxelPos[0] + 1, voxelPos[1] + 1, voxelPos[2] + 1];
+                            VoxelType adjacentVoxel = voxels[voxelPos[0] + forwardDirection[0] + 1, voxelPos[1] + forwardDirection[1] + 1, voxelPos[2] + forwardDirection[2] + 1];
 
                             bool isPositiveFace = currentVoxel == VoxelType.Water && adjacentVoxel == VoxelType.Empty;
                             bool isNegativeFace = adjacentVoxel == VoxelType.Water && currentVoxel == VoxelType.Empty;
@@ -417,11 +505,6 @@ namespace CubeEngine.Engine.Client.World
             indices.Add(vertexOffset);
 
             vertexOffset += 4;
-        }
-
-        private VoxelType VoxelAt(ChunkData data, ChunkData[] neighbors, int x, int y, int z)
-        {
-            return GetVoxelWithNeighbors(x, y, z, data, neighbors);
         }
 
         private void AddSolidQuad(

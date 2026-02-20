@@ -7,7 +7,6 @@ namespace MultiplayerVoxelGame.Util.Settings
         public const float moveSpeed = 20f;
         public const float jumpForce = 5f;
         public const float mass = 4f;
-        public const int MaxChunkLoadDistance = 5;
-
+        public const int MaxChunkLoadDistance = 8;
     }
 }
