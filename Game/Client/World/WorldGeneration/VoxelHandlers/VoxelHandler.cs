@@ -1,29 +1,27 @@
-﻿using CubeEngine.Engine.Client.World.Enum;
+﻿using CubeEngine.Engine.Client.World;
+using CubeEngine.Engine.Client.World.Enum;
+using OpenTK.Mathematics;
 
 namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration.VoxelHandlers
 {
     public abstract class VoxelHandler
     {
-        protected VoxelHandler? Next;
+        private VoxelHandler _next;
 
-        public VoxelHandler SetNext(VoxelHandler next)
+        public VoxelHandler(VoxelHandler next)
         {
-            Next = next;
-            return next;
+            _next = next;
         }
 
-        public VoxelType Handle(VoxelGenerationContext context)
+        public bool Handle(VoxelGenerationContext voxelGenerationContext)
         {
-            if (CanHandle(context))
-                return Resolve(context);
-
-            if (Next != null)
-                return Next.Handle(context);
-
-            return VoxelType.Empty;
+            if (TryHandling(voxelGenerationContext))
+                return true;
+            if (_next != null)
+                return _next.Handle(voxelGenerationContext);
+            return false;
         }
 
-        protected abstract bool CanHandle(VoxelGenerationContext context);
-        protected abstract VoxelType Resolve(VoxelGenerationContext context);
+        protected abstract bool TryHandling(VoxelGenerationContext voxelGenerationContext);
     }
 }

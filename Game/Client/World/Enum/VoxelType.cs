@@ -7,5 +7,6 @@
         Stone = 2,
         Grass = 3,
         Water = 4,
+        Sand = 5,
     }
 }

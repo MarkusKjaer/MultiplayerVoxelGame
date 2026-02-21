@@ -32,7 +32,6 @@ namespace CubeEngine.Engine
                 {
                     try
                     {
-                        Noise.LoadHeightmap();
                         Server = new GameServer(tcpPort, udpPort);
 
                         Console.WriteLine($"[Server Thread] Starting on TCP:{tcpPort} UDP:{udpPort}");

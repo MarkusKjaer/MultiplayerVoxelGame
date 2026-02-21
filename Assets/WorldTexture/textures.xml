@@ -12,4 +12,8 @@
     <value>2</value>
     <filename>grass.png</filename>
   </texture>
+    <texture name="sand">
+    <value>4</value>
+    <filename>sand.png</filename>
+  </texture>
 </textures>

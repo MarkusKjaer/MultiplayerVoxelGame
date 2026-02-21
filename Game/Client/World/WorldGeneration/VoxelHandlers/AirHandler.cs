@@ -1,12 +1,24 @@
-﻿using CubeEngine.Engine.Client.World.Enum;
+﻿using CubeEngine.Engine.Client.World;
+using CubeEngine.Engine.Client.World.Enum;
+using OpenTK.Mathematics;
 
 namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration.VoxelHandlers
 {
     public class AirHandler : VoxelHandler
     {
-        protected override bool CanHandle(VoxelGenerationContext context) => true;
+        public AirHandler(VoxelHandler next) : base(next)
+        {
+        }
 
-        protected override VoxelType Resolve(VoxelGenerationContext context)
-            => VoxelType.Empty;
+        protected override bool TryHandling(VoxelGenerationContext context)
+        {
+            if (context.Y > context.SurfaceHeightNoise)
+            {
+                Vector3i pos = new Vector3i(context.X, context.Y, context.Z);
+                context.ChunkData.SetVoxel(pos, VoxelType.Empty);
+                return true;
+            }
+            return false;
+        }
     }
 }
