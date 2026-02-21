@@ -72,7 +72,7 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration
 
             DirtLayerHandler dirtHandler = new(stoneHandler, 3.0f);
 
-            SurfaceHandler surfaceHandler = new(VoxelType.Grass, dirtHandler);
+            SurfaceHandler surfaceHandler = new(VoxelType.Grass, ChunkSettings.WaterLevel, dirtHandler);
 
             AirHandler airHandler = new(surfaceHandler);
 

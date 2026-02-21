@@ -15,13 +15,22 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration.VoxelHandlers
 
         protected override bool TryHandling(VoxelGenerationContext ctx)
         {
+            Vector3i pos = new Vector3i(ctx.X, ctx.Y, ctx.Z);
+
             if (ctx.Density <= 0 && ctx.Y <= _waterLevel)
             {
-                Vector3i pos = new Vector3i(ctx.X, ctx.Y, ctx.Z);
                 ctx.ChunkData.SetVoxel(pos, VoxelType.Water);
-
                 return true;
             }
+
+            if (ctx.Density > 0 &&
+                ctx.Y <= _waterLevel &&
+                ctx.DensityAbove <= 0)
+            {
+                ctx.ChunkData.SetVoxel(pos, VoxelType.Sand);
+                return true;
+            }
+
             return false;
         }
     }
