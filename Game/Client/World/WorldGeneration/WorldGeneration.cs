@@ -61,8 +61,6 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration
             exponent = 5f
         };
 
-        
-
         void InitBiomeGenerators()
         {
             domainWarping = new(
@@ -70,28 +68,28 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration
                 NoiseSettingsDomainY
             );
 
-            UndergroundLayerHandler undergroundLayerHandler = new(null, VoxelType.Stone);
-            SurfaceHandler surfaceHandler = new(VoxelType.Grass, undergroundLayerHandler);
+            UndergroundLayerHandler stoneHandler = new(null, VoxelType.Stone);
+
+            DirtLayerHandler dirtHandler = new(stoneHandler, 3.0f);
+
+            SurfaceHandler surfaceHandler = new(VoxelType.Grass, dirtHandler);
+
             AirHandler airHandler = new(surfaceHandler);
+
             WaterHandler waterHandler = new(airHandler, ChunkSettings.WaterLevel);
 
-            StoneLayerHandler stoneLayerHandler = new(StoneLayerNoise, domainWarping, null);
+            VoxelHandler startLayerHandler = waterHandler;
 
-            var additionalHandlers = new List<VoxelHandler>()
-            {
-                stoneLayerHandler
-            };
+            var additionalHandlers = new List<VoxelHandler>();
 
-            
-
-            plainsBiomeGenerator = new(
+            plainsBiomeGenerator = new BiomeGenerator(
                 WorldNoise,
                 domainWarping,
-                waterHandler,
-                additionalHandlers
+                startLayerHandler, 
+                additionalHandlers,
+                50
             );
         }
-
 
         #endregion
 

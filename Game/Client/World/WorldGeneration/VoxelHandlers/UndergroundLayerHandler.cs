@@ -12,15 +12,11 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration.VoxelHandlers
             _undergroundBlockType = undergroundBlockType;
         }
 
-        protected override bool TryHandling(VoxelGenerationContext voxelGenerationContext)
+        protected override bool TryHandling(VoxelGenerationContext ctx)
         {
-            if (voxelGenerationContext.Y < voxelGenerationContext.SurfaceHeightNoise)
-            {
-                Vector3i pos = new Vector3i(voxelGenerationContext.X, voxelGenerationContext.Y, voxelGenerationContext.Z);
-                voxelGenerationContext.ChunkData.SetVoxel(pos, _undergroundBlockType);
-                return true;
-            }
-            return false;
+            Vector3i pos = new Vector3i(ctx.X, ctx.Y, ctx.Z);
+            ctx.ChunkData.SetVoxel(pos, _undergroundBlockType); 
+            return true;
         }
     }
 }

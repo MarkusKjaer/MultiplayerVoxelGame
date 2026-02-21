@@ -6,16 +6,14 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration.VoxelHandlers
 {
     public class AirHandler : VoxelHandler
     {
-        public AirHandler(VoxelHandler next) : base(next)
-        {
-        }
+        public AirHandler(VoxelHandler next) : base(next) { }
 
-        protected override bool TryHandling(VoxelGenerationContext context)
+        protected override bool TryHandling(VoxelGenerationContext ctx)
         {
-            if (context.Y > context.SurfaceHeightNoise)
+            if (ctx.Density <= 0)
             {
-                Vector3i pos = new Vector3i(context.X, context.Y, context.Z);
-                context.ChunkData.SetVoxel(pos, VoxelType.Empty);
+                Vector3i pos = new Vector3i(ctx.X, ctx.Y, ctx.Z);
+                ctx.ChunkData.SetVoxel(pos, VoxelType.Empty);
                 return true;
             }
             return false;

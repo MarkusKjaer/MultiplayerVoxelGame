@@ -13,12 +13,12 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration.VoxelHandlers
             this.surfaceBlockType = surfaceBlockType;
         }
 
-        protected override bool TryHandling(VoxelGenerationContext voxelGenerationContext)
+        protected override bool TryHandling(VoxelGenerationContext ctx)
         {
-            if (voxelGenerationContext.Y == voxelGenerationContext.SurfaceHeightNoise)
+            if (ctx.DensityAbove <= 0)
             {
-                Vector3i pos = new Vector3i(voxelGenerationContext.X, voxelGenerationContext.Y, voxelGenerationContext.Z);
-                voxelGenerationContext.ChunkData.SetVoxel(pos, surfaceBlockType);
+                Vector3i pos = new Vector3i(ctx.X, ctx.Y, ctx.Z);
+                ctx.ChunkData.SetVoxel(pos, surfaceBlockType); 
                 return true;
             }
             return false;

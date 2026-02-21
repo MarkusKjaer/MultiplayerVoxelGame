@@ -1,5 +1,6 @@
 ﻿using MultiplayerVoxelGame.Game.Client.World.WorldGeneration;
 using NoiseDotNet;
+using System.Buffers;
 
 namespace MultiplayerVoxelGame.Util
 {
@@ -26,28 +27,53 @@ namespace MultiplayerVoxelGame.Util
             return MathF.Pow(noise * settings.redistributionModifier, settings.exponent);
         }
 
-        //public static float OctavePerlin(float x, float z, NoiseSettings settings)
-        //{
-        //    x *= settings.noiseZoom;
-        //    z *= settings.noiseZoom;
-        //    x += settings.noiseZoom;
-        //    z += settings.noiseZoom;
+        public static void OctaveGradientNoise3D(
+            Span<float> xCoords, Span<float> yCoords, Span<float> zCoords, Span<float> output,
+            NoiseSettings settings, int seed)
+        {
 
-        //    float total = 0;
-        //    float frequency = 1;
-        //    float amplitude = 1;
-        //    float amplitudeSum = 0;  // Used for normalizing result to 0.0 - 1.0 range
-        //    for (int i = 0; i < settings.octaves; i++)
-        //    {
-        //        total += Noise.((settings.offest.X + settings.worldOffset.X + x) * frequency, (settings.offest.Y + settings.worldOffset.Y + z) * frequency) * amplitude;
+            output.Clear();
 
-        //        amplitudeSum += amplitude;
+            float[] tempArray = ArrayPool<float>.Shared.Rent(output.Length);
 
-        //        amplitude *= settings.persistance;
-        //        frequency *= 2;
-        //    }
+            try
+            {
+                Span<float> tempSpan = tempArray.AsSpan(0, output.Length);
 
-        //    return total / amplitudeSum;
-        //}
+                float frequency = 1f;
+                float amplitude = 1f;
+                float amplitudeSum = 0f;
+
+                for (int i = 0; i < settings.octaves; i++)
+                {
+                    float currentXFreq = settings.noiseZoom * frequency;
+                    float currentYFreq = settings.noiseZoom * frequency;
+                    float currentZFreq = settings.noiseZoom * frequency;
+
+                    Noise.GradientNoise3D(
+                        xCoords, yCoords, zCoords, tempSpan,
+                        currentXFreq, currentYFreq, currentZFreq, amplitude, seed + i
+                    );
+
+                    for (int j = 0; j < output.Length; j++)
+                    {
+                        output[j] += tempSpan[j];
+                    }
+
+                    amplitudeSum += amplitude;
+                    amplitude *= settings.persistance;
+                    frequency *= 2f;
+                }
+
+                for (int j = 0; j < output.Length; j++)
+                {
+                    output[j] /= amplitudeSum;
+                }
+            }
+            finally
+            {
+                ArrayPool<float>.Shared.Return(tempArray);
+            }
+        }
     }
 }

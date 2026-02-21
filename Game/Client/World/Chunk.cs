@@ -622,8 +622,8 @@ namespace CubeEngine.Engine.Client.World
 
         public void Remove()
         {
-            SolidMesh.Dispose();
-            WaterMesh.Dispose();
+            SolidMesh?.Dispose();
+            WaterMesh?.Dispose();
         }
 
         private VoxelType GetVoxelWithNeighbors(int x, int y, int z, ChunkData centerData, ChunkData[] neighbors)

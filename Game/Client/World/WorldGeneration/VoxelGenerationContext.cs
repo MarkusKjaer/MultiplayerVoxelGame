@@ -11,8 +11,10 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration
         public int Z { get; private set; }
         public int SurfaceHeightNoise { get; private set; }
         public Vector2i MapSeedOffset { get; private set; }
+        public float Density { get; private set; }
+        public float DensityAbove { get; private set; }
 
-        public VoxelGenerationContext(ChunkData chunkData, int x, int y, int z, int surfaceHeightNoise, Vector2i mapSeedOffset)
+        public VoxelGenerationContext(ChunkData chunkData, int x, int y, int z, int surfaceHeightNoise, Vector2i mapSeedOffset, float density, float densityAbove)
         {
             ChunkData = chunkData;
             X = x;
@@ -20,6 +22,8 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration
             Z = z;
             SurfaceHeightNoise = surfaceHeightNoise;
             MapSeedOffset = mapSeedOffset;
+            Density = density;
+            DensityAbove = densityAbove;
         }
     }
 }
