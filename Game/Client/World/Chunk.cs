@@ -16,6 +16,9 @@ namespace CubeEngine.Engine.Client.World
 
         private int _meshVersion = 0;
 
+        private Material _solidMaterial;
+        private Material _waterMaterial;
+
         #region MeshData
 
         private static readonly (int x, int y, int z)[][] AoOffsets = {
@@ -46,28 +49,40 @@ namespace CubeEngine.Engine.Client.World
         {
             _map = map;
             _chunkData = chunkData;
-            SolidMesh = new ChunkMesh(ChunkMeshInfo.Empty, solidMaterial);
-            WaterMesh = new WaterChunkMesh(WaterChunkMeshInfo.Empty, waterMaterial);
+            _solidMaterial = solidMaterial;
+            _waterMaterial = waterMaterial;
+            //SolidMesh = new ChunkMesh(ChunkMeshInfo.Empty, solidMaterial);
+            //WaterMesh = new WaterChunkMesh(WaterChunkMeshInfo.Empty, waterMaterial);
             RegenerateMeshAsync();
         }
 
         #region MeshGeneration
 
-        public async void RegenerateMeshAsync()
+        public void RegenerateMeshAsync()
         {
-            int version = ++_meshVersion;
-            var dataSnapshot = _chunkData;
-
-            var neighbors = _map.GetNeighborData(dataSnapshot.Position);
-
-            var meshData = await Task.Run(() => GenSolidChunkMesh(dataSnapshot, neighbors));
-            var waterMeshData = await Task.Run(() => GenWaterChunkMesh(dataSnapshot, neighbors));
-
-            GLActionQueue.Enqueue(() =>
+            Task.Run(() =>
             {
-                if (version != _meshVersion) return;
-                SolidMesh.UpdateMesh(meshData);
-                WaterMesh.UpdateMesh(waterMeshData);
+                int version = ++_meshVersion;
+                var dataSnapshot = _chunkData;
+
+                var neighbors = _map.GetNeighborData(dataSnapshot.Position);
+
+                var meshData = GenSolidChunkMesh(dataSnapshot, neighbors);
+                var waterMeshData = GenWaterChunkMesh(dataSnapshot, neighbors);
+
+                GLActionQueue.Enqueue(() =>
+                {
+                    if (version != _meshVersion) return;
+
+                    if (SolidMesh == null || WaterMesh == null)
+                    {
+                        SolidMesh = new ChunkMesh(ChunkMeshInfo.Empty, _solidMaterial);
+                        WaterMesh = new WaterChunkMesh(WaterChunkMeshInfo.Empty, _waterMaterial);
+                    }
+
+                    SolidMesh.UpdateMesh(meshData);
+                    WaterMesh.UpdateMesh(waterMeshData);
+                });
             });
         }
 
@@ -582,6 +597,8 @@ namespace CubeEngine.Engine.Client.World
 
         public void OnUpdate()
         {
+            if(SolidMesh == null || WaterMesh == null) return;
+
             Matrix4 translation = Matrix4.CreateTranslation(new(_chunkData.Position.X, 0, _chunkData.Position.Y));
             SolidMesh.Model = translation;
             WaterMesh.Model = translation; 
@@ -590,10 +607,17 @@ namespace CubeEngine.Engine.Client.World
             WaterMesh.Update(CubeGameWindow.Instance.CurrentGameScene.ActiveCamera, CubeGameWindow.Instance.WindowWidth, CubeGameWindow.Instance.Windowheight);
         }
 
-        public void Render()
+        public void RenderSolid()
         {
-            SolidMesh.Render();  // opaque first
-            WaterMesh.Render();  // transparent second
+            if (SolidMesh == null) return;
+
+            SolidMesh.Render();  
+        }
+
+        public void RenderTransparent()
+        {
+            if (WaterMesh == null) return;
+            WaterMesh.Render();
         }
 
         public void Remove()

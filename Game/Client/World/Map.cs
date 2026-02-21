@@ -43,20 +43,21 @@ namespace CubeEngine.Engine.Client.World
             switch (packet)
             {
                 case ChunkInfoPacket chunkInfoPacket:
-                    // Process through GLActionQueue to ensure OpenGL calls stay on the main thread
-                    GLActionQueue.Enqueue(() => AddNewChunk(chunkInfoPacket.ChunkData));
+                    Task.Run(() => AddNewChunk(chunkInfoPacket.ChunkData));
                     break;
             }
         }
 
         public void AddNewChunk(ChunkData chunkData)
         {
+            Chunk newChunk;
+            bool requiresMeshGen = true;
+
             lock (_chunkLock)
             {
-                Chunk newChunk;
                 if (CurrentChunks.TryGetValue(chunkData.Position, out var existingChunk))
                 {
-                    existingChunk.ChunkData = chunkData; 
+                    existingChunk.ChunkData = chunkData;
                     newChunk = existingChunk;
                 }
                 else
@@ -64,12 +65,17 @@ namespace CubeEngine.Engine.Client.World
                     newChunk = new Chunk(chunkData, _solidMaterial, _waterMaterial, this);
                     CurrentChunks.Add(chunkData.Position, newChunk);
                 }
-
-                RefreshNeighbor(chunkData.Position + new Vector2(ChunkSettings.Width, 0));  // East (+X)
-                RefreshNeighbor(chunkData.Position + new Vector2(-ChunkSettings.Width, 0)); // West (-X)
-                RefreshNeighbor(chunkData.Position + new Vector2(0, ChunkSettings.Width));  // North (+Z)
-                RefreshNeighbor(chunkData.Position + new Vector2(0, -ChunkSettings.Width)); // South (-Z)
             }
+
+            if (requiresMeshGen)
+            {
+                newChunk.RegenerateMeshAsync();
+            }
+
+            RefreshNeighbor(chunkData.Position + new Vector2(ChunkSettings.Width, 0));  // East
+            RefreshNeighbor(chunkData.Position + new Vector2(-ChunkSettings.Width, 0)); // West
+            RefreshNeighbor(chunkData.Position + new Vector2(0, ChunkSettings.Width));  // North
+            RefreshNeighbor(chunkData.Position + new Vector2(0, -ChunkSettings.Width)); // South
         }
 
         private void RefreshNeighbor(Vector2 position)
@@ -99,9 +105,9 @@ namespace CubeEngine.Engine.Client.World
                 chunkList = new List<Chunk>(CurrentChunks.Values);
             }
 
-            // Draw all solid meshes first (no sorting needed, they write to depth buffer)
+            // Draw all solid meshes first 
             foreach (var chunk in chunkList)
-                chunk.SolidMesh.Render();
+                chunk.RenderSolid();
 
             // Sort water chunks back-to-front from camera
             chunkList.Sort((a, b) =>
@@ -114,7 +120,7 @@ namespace CubeEngine.Engine.Client.World
             });
 
             foreach (var chunk in chunkList)
-                chunk.WaterMesh.Render();
+                chunk.RenderTransparent();
         }
 
         public VoxelType GetVoxelGlobal(int globalX, int globalY, int globalZ)

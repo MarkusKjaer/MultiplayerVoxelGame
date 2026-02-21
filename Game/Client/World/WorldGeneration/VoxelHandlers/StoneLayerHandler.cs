@@ -24,7 +24,7 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration.VoxelHandlers
             if (ctx.Y > ctx.SurfaceHeightNoise) return false;
 
             int mapIndex = ctx.Z * ctx.ChunkData.SizeX + ctx.X;
-            float stoneNoise = 0.5f;
+            float stoneNoise = 0.9f;
 
             if (stoneNoise > _stoneThreshold)
             {
