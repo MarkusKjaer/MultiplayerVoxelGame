@@ -256,12 +256,14 @@ namespace CubeEngine.Engine.Server
                 try
                 {
                     TickUpdate();
-                    SendPlayerInfoTick(); 
+                    //SendPlayerInfoTick(); 
 
-                    if (tickCount % tcpSendIntervalTicks == 0)
-                    {
-                        SendPlayerInfoTickTCP();
-                    }
+                    SendPlayerInfoTickTCP();
+
+                    //if (tickCount % tcpSendIntervalTicks == 0)
+                    //{
+                    //    SendPlayerInfoTickTCP();
+                    //}
 
                     tickCount++;
                 }

@@ -30,11 +30,11 @@ namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration
 
         private NoiseSettings WorldNoise = new()
         {
-            noiseZoom = 0.01f,
+            noiseZoom = 0.005f,
             octaves = 3,
             offest = new Vector2i(-400, 3400),
             worldOffset = new Vector2i(2000, 0),
-            persistance = 0.4f,
+            persistance = 0.75f,
             redistributionModifier = 1.2f,
             exponent = 5f
         };
