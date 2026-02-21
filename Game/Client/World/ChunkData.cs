@@ -12,6 +12,8 @@ namespace CubeEngine.Engine.Client.World
 
         public bool IsDirty { get; set; }
 
+        public Vector2 Position { get; private set; }
+
         public ChunkData(int sizeX, int sizeY, int sizeZ, Vector2 position)
         {
             SizeX = sizeX;
@@ -26,10 +28,16 @@ namespace CubeEngine.Engine.Client.World
             if (x < 0 || x >= SizeX ||
                 y < 0 || y >= SizeY ||
                 z < 0 || z >= SizeZ)
-                throw new ArgumentOutOfRangeException();
+            {
+                throw new ArgumentOutOfRangeException(
+                    $"Chunk Index out of range: ({x},{y},{z}) | " +
+                    $"Chunk Size: ({SizeX},{SizeY},{SizeZ}) | " +
+                    $"Chunk Position: {Position}");
+            }
 
             return x + SizeX * (y + SizeY * z);
         }
+
         public VoxelType GetVoxel(int x, int y, int z)
         {
             if (x < 0 || x >= SizeX ||
@@ -43,9 +51,18 @@ namespace CubeEngine.Engine.Client.World
         }
         public void SetVoxel(int x, int y, int z, VoxelType voxel)
         {
-            Voxels[Index(x, y, z)] = (byte)voxel;
+            if (x < 0 || x >= SizeX ||
+                y < 0 || y >= SizeY ||
+                z < 0 || z >= SizeZ)
+                return;
+
+            Voxels[x + SizeX * (y + SizeY * z)] = (byte)voxel;
             IsDirty = true;
         }
-        public Vector2 Position { get; private set; }
+
+        public void SetVoxel(Vector3i pos, VoxelType voxel)
+        {
+            SetVoxel(pos.X, pos.Y, pos.Z, voxel);
+        }
     }
 }

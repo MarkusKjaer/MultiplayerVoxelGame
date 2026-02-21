@@ -163,6 +163,8 @@ namespace CubeEngine.Engine.Server
                 int lx = x - chunkX * ChunkSettings.Width;
                 int lz = z - chunkZ * ChunkSettings.Width;
 
+                if(data is null) return false;
+
                 if (y >= 0 && y < data.ChunkData.SizeY)
                 {
                     var isNotSolid = data.GetVoxel(lx, y, lz) == Client.World.Enum.VoxelType.Empty;

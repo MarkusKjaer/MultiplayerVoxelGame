@@ -3,6 +3,8 @@
     public static class ChunkSettings
     {
         public const short Width = 32;
-        public const short Height = 50;
+        public const short Height = 100;
+        public const short WaterLevel = 40;
+        public const short CrazyValue = 50;
     }
 }

@@ -7,6 +7,7 @@ using OpenTK.Mathematics;
 using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Net;
+using System.Threading.Channels;
 
 namespace CubeEngine.Engine.Server
 {
@@ -18,7 +19,24 @@ namespace CubeEngine.Engine.Server
             public required Object Lock;
         }
 
+        private readonly struct ChunkSaveRequest
+        {
+            public readonly int ChunkX;
+            public readonly int ChunkZ;
+            public readonly byte[] CompressedData;
+
+            public ChunkSaveRequest(int x, int z, byte[] data)
+            {
+                ChunkX = x;
+                ChunkZ = z;
+                CompressedData = data;
+            }
+        }
+
+        private readonly Channel<ChunkSaveRequest> _saveQueue = Channel.CreateUnbounded<ChunkSaveRequest>();
+
         public ConcurrentDictionary<Vector2, ChunkInfo> CurrentChunks = new();
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _regionLocks = new();
 
         private WorldGeneration _worldGen;
 
@@ -46,6 +64,8 @@ namespace CubeEngine.Engine.Server
             }
 
             GameServer.Instance.ClientMessage += OnClientMessage;
+
+            _ = Task.Run(ProcessSaveQueueAsync);
         }
 
         private void OnClientMessage(IPEndPoint sender, Packet packet)
@@ -70,57 +90,62 @@ namespace CubeEngine.Engine.Server
             var chunkInfo = CurrentChunks.GetOrAdd(chunkPos, _ => new ChunkInfo
             {
                 ServerChunk = null!,
-                Lock = new object()
+                Lock = new object() 
             });
 
-            if (chunkInfo == null)
-                return;
-
-            lock (chunkInfo.Lock)
+            Task.Run(() =>
             {
-                if (chunkInfo.ServerChunk == null)
-                {
-                    var loaded = LoadChunk(chunkX, chunkZ);
+                ServerChunk localChunkRef = null;
 
-                    if (loaded != null)
+                lock (chunkInfo.Lock)
+                {
+                    if (chunkInfo.ServerChunk != null)
                     {
-                        chunkInfo.ServerChunk = loaded;
+                        localChunkRef = chunkInfo.ServerChunk;
+                    }
+                }
+
+                if (localChunkRef == null)
+                {
+                    localChunkRef = LoadChunk(chunkX, chunkZ);
+
+                    if (localChunkRef != null)
+                    {
                         Console.WriteLine($"Loaded chunk from disk at {chunkX},{chunkZ}");
                     }
                     else
                     {
                         var chunksToGen = new List<Vector2> { chunkPos };
-                        var newChunks = _worldGen.GenPartOfWorld(
-                            ChunkSize,
-                            MaxWorldHeight,
-                            chunksToGen
-                        );
+                        var newChunks = _worldGen.GenPartOfWorld(ChunkSize, MaxWorldHeight, chunksToGen);
+                        localChunkRef = new ServerChunk(newChunks[0]);
 
-                        var newChunk = new ServerChunk(newChunks[0]);
-
-                        chunkInfo.ServerChunk = newChunk;
-
-                        SaveChunk(newChunk);
-
+                        SaveChunk(localChunkRef);
                         Console.WriteLine($"Generated & saved chunk at {chunkX},{chunkZ}");
                     }
+
+                    lock (chunkInfo.Lock)
+                    {
+                        if (chunkInfo.ServerChunk == null)
+                        {
+                            chunkInfo.ServerChunk = localChunkRef;
+                        }
+                        else
+                        {
+                            localChunkRef = chunkInfo.ServerChunk;
+                        }
+                    }
                 }
-            }
 
-            try
-            {
-                var packet = new ChunkInfoPacket(
-                    chunkInfo.ServerChunk.ChunkData,
-                    ChunkSize,
-                    MaxWorldHeight
-                );
-
-                _ = GameServer.Instance.SendTcpPacket(client.TcpClient, packet);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Chunk send failed: {e}");
-            }
+                try
+                {
+                    var packet = new ChunkInfoPacket(localChunkRef.ChunkData, ChunkSize, MaxWorldHeight);
+                    _ = GameServer.Instance.SendTcpPacket(client.TcpClient, packet);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Chunk send failed: {e}");
+                }
+            });
         }
 
         public void SetBlock(int x, int y, int z, VoxelType type)
@@ -211,14 +236,32 @@ namespace CubeEngine.Engine.Server
             return Path.Combine(_worldPath, "region", $"r.{regionX}.{regionZ}.mca");
         }
 
+        private async Task ProcessSaveQueueAsync()
+        {
+            // This loop asynchronously waits for new items. 
+            // It yields the thread when empty, using 0% CPU.
+            await foreach (var request in _saveQueue.Reader.ReadAllAsync())
+            {
+                try
+                {
+                    await WriteChunkToRegionAsync(request.ChunkX, request.ChunkZ, request.CompressedData);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to save chunk {request.ChunkX},{request.ChunkZ}: {ex.Message}");
+                }
+            }
+        }
+
         public void SaveChunk(ServerChunk chunk)
         {
             int chunkX = (int)(chunk.ChunkData.Position.X / ChunkSize);
             int chunkZ = (int)(chunk.ChunkData.Position.Y / ChunkSize);
 
+            // CPU-bound work is fine here (it's already on a background thread from our last fix)
             byte[] rawData = SerializeChunk(chunk);
-
             byte[] compressed;
+
             using (var ms = new MemoryStream())
             {
                 using (var z = new System.IO.Compression.ZLibStream(ms, CompressionLevel.Fastest))
@@ -227,53 +270,73 @@ namespace CubeEngine.Engine.Server
                 compressed = ms.ToArray();
             }
 
-            WriteChunkToRegion(chunkX, chunkZ, compressed);
+            // Toss it into the queue and immediately return!
+            _saveQueue.Writer.TryWrite(new ChunkSaveRequest(chunkX, chunkZ, compressed));
         }
 
-        private void WriteChunkToRegion(int chunkX, int chunkZ, byte[] compressedData)
+        private async Task WriteChunkToRegionAsync(int chunkX, int chunkZ, byte[] compressedData)
         {
             var (regionX, regionZ) = GetRegionCoords(chunkX, chunkZ);
             string path = GetRegionPath(regionX, regionZ);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            var regionLock = _regionLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
+            await regionLock.WaitAsync();
 
-            using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            using var bw = new BinaryWriter(fs, System.Text.Encoding.Default, true);
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
-            if (fs.Length < HEADER_BYTES)
-                fs.SetLength(HEADER_BYTES);
+                using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.Asynchronous);
 
-            int index = GetChunkIndexInRegion(chunkX, chunkZ);
+                if (fs.Length < HEADER_BYTES)
+                    fs.SetLength(HEADER_BYTES);
 
-            int totalLength = compressedData.Length + 5;
-            int sectorCount = (totalLength + SECTOR_BYTES - 1) / SECTOR_BYTES;
+                int index = GetChunkIndexInRegion(chunkX, chunkZ);
+                int totalLength = compressedData.Length + 5;
+                int sectorCount = (totalLength + SECTOR_BYTES - 1) / SECTOR_BYTES;
 
-            long fileLength = fs.Length;
-            long alignedLength = ((fileLength + SECTOR_BYTES - 1) / SECTOR_BYTES) * SECTOR_BYTES;
+                long fileLength = fs.Length;
+                long alignedLength = ((fileLength + SECTOR_BYTES - 1) / SECTOR_BYTES) * SECTOR_BYTES;
 
-            if (fileLength != alignedLength)
-                fs.SetLength(alignedLength);
+                if (fileLength != alignedLength)
+                    fs.SetLength(alignedLength);
 
-            int sectorOffset = (int)(alignedLength / SECTOR_BYTES);
+                int sectorOffset = (int)(alignedLength / SECTOR_BYTES);
 
-            // Write chunk data
-            fs.Seek(sectorOffset * SECTOR_BYTES, SeekOrigin.Begin);
+                // Write chunk data into a memory buffer first
+                using var chunkBuffer = new MemoryStream();
+                using var bw = new BinaryWriter(chunkBuffer, System.Text.Encoding.Default, true);
 
-            bw.Write(compressedData.Length + 1);
-            bw.Write((byte)2);
-            bw.Write(compressedData);
+                bw.Write(compressedData.Length + 1);
+                bw.Write((byte)2);
+                bw.Write(compressedData);
 
-            int padding = sectorCount * SECTOR_BYTES - totalLength;
-            if (padding > 0)
-                bw.Write(new byte[padding]);
+                int padding = sectorCount * SECTOR_BYTES - totalLength;
+                if (padding > 0)
+                    bw.Write(new byte[padding]);
 
-            // Update header
-            fs.Seek(index * 4, SeekOrigin.Begin);
+                // Asynchronously write the data to disk
+                fs.Seek(sectorOffset * SECTOR_BYTES, SeekOrigin.Begin);
+                byte[] chunkBytes = chunkBuffer.ToArray();
+                await fs.WriteAsync(chunkBytes, 0, chunkBytes.Length);
 
-            bw.Write((byte)(sectorOffset >> 16));
-            bw.Write((byte)(sectorOffset >> 8));
-            bw.Write((byte)(sectorOffset));
-            bw.Write((byte)sectorCount);
+                // Update header in a memory buffer
+                using var headerBuffer = new MemoryStream();
+                using var headerBw = new BinaryWriter(headerBuffer);
+                headerBw.Write((byte)(sectorOffset >> 16));
+                headerBw.Write((byte)(sectorOffset >> 8));
+                headerBw.Write((byte)(sectorOffset));
+                headerBw.Write((byte)sectorCount);
+
+                // Asynchronously write the header to disk
+                fs.Seek(index * 4, SeekOrigin.Begin);
+                byte[] headerBytes = headerBuffer.ToArray();
+                await fs.WriteAsync(headerBytes, 0, headerBytes.Length);
+            }
+            finally
+            {
+                regionLock.Release();
+            }
         }
 
         public ServerChunk? LoadChunk(int chunkX, int chunkZ)
@@ -281,42 +344,51 @@ namespace CubeEngine.Engine.Server
             var (regionX, regionZ) = GetRegionCoords(chunkX, chunkZ);
             string path = GetRegionPath(regionX, regionZ);
 
-            if (!File.Exists(path))
-                return null;
+            if (!File.Exists(path)) return null;
 
-            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
-            using var br = new BinaryReader(fs);
+            var regionLock = _regionLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
+            regionLock.Wait();
 
-            int index = GetChunkIndexInRegion(chunkX, chunkZ);
-
-            fs.Seek(index * 4, SeekOrigin.Begin);
-
-            int offset = (br.ReadByte() << 16) |
-                         (br.ReadByte() << 8) |
-                         br.ReadByte();
-
-            int sectorCount = br.ReadByte();
-
-            if (offset == 0)
-                return null;
-
-            fs.Seek(offset * SECTOR_BYTES, SeekOrigin.Begin);
-
-            int length = br.ReadInt32();
-            byte compressionType = br.ReadByte();
-
-            byte[] compressed = br.ReadBytes(length - 1);
-
-            byte[] raw;
-            using (var ms = new MemoryStream(compressed))
-            using (var z = new System.IO.Compression.ZLibStream(ms, CompressionMode.Decompress))
-            using (var outMs = new MemoryStream())
+            try
             {
-                z.CopyTo(outMs);
-                raw = outMs.ToArray();
-            }
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var br = new BinaryReader(fs);
 
-            return DeserializeChunk(raw, chunkX, chunkZ);
+                int index = GetChunkIndexInRegion(chunkX, chunkZ);
+
+                fs.Seek(index * 4, SeekOrigin.Begin);
+
+                int offset = (br.ReadByte() << 16) |
+                             (br.ReadByte() << 8) |
+                             br.ReadByte();
+
+                int sectorCount = br.ReadByte();
+
+                if (offset == 0)
+                    return null;
+
+                fs.Seek(offset * SECTOR_BYTES, SeekOrigin.Begin);
+
+                int length = br.ReadInt32();
+                byte compressionType = br.ReadByte();
+
+                byte[] compressed = br.ReadBytes(length - 1);
+
+                byte[] raw;
+                using (var ms = new MemoryStream(compressed))
+                using (var z = new System.IO.Compression.ZLibStream(ms, CompressionMode.Decompress))
+                using (var outMs = new MemoryStream())
+                {
+                    z.CopyTo(outMs);
+                    raw = outMs.ToArray();
+                }
+
+                return DeserializeChunk(raw, chunkX, chunkZ);
+            }
+            finally
+            {
+                regionLock.Release();
+            }
         }
 
         private byte[] SerializeChunk(ServerChunk chunk)

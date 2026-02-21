@@ -1,90 +1,133 @@
 ﻿using CubeEngine.Engine.Client.World;
 using CubeEngine.Engine.Client.World.Enum;
 using CubeEngine.Util;
+using MultiplayerVoxelGame.Game.Client.World.WorldGeneration.VoxelHandlers;
+using MultiplayerVoxelGame.Util.Settings;
 using OpenTK.Mathematics;
 
 namespace MultiplayerVoxelGame.Game.Client.World.WorldGeneration
 {
     public class WorldGeneration
     {
-        int _seed;
+        private readonly int _seed;
 
-        private int _maxWorldHeight = 64;
+        private DomainWarping domainWarping;
 
-        public WorldGeneration(int seed) 
+        #region Biome Settings
+
+        private BiomeGenerator plainsBiomeGenerator;
+
+        private NoiseSettings StoneLayerNoise = new()
+        {
+            noiseZoom = 0.01f,
+            octaves = 1,
+            offest = new Vector2i(-3200, 100),
+            worldOffset = new Vector2i(2000, 0),
+            persistance = 0.4f,
+            redistributionModifier = 1.2f,
+            exponent = 5f
+        };
+
+        private NoiseSettings WorldNoise = new()
+        {
+            noiseZoom = 0.005f,
+            octaves = 3,
+            offest = new Vector2i(-400, 3400),
+            worldOffset = new Vector2i(2000, 0),
+            persistance = 0.75f,
+            redistributionModifier = 1.2f,
+            exponent = 5f
+        };
+
+        private NoiseSettings NoiseSettingsDomainX = new()
+        {
+            noiseZoom = 0.01f,
+            octaves = 3,
+            offest = new Vector2i(600, 350),
+            worldOffset = new Vector2i(0, 0),
+            persistance = 0.5f,
+            redistributionModifier = 1.2f,
+            exponent = 5f
+        };
+
+        private NoiseSettings NoiseSettingsDomainY = new()
+        {
+            noiseZoom = 0.02f,
+            octaves = 3,
+            offest = new Vector2i(900, 1500),
+            worldOffset = new Vector2i(0, 0),
+            persistance = 0.5f,
+            redistributionModifier = 1.2f,
+            exponent = 5f
+        };
+
+        void InitBiomeGenerators()
+        {
+            domainWarping = new(
+                NoiseSettingsDomainX,
+                NoiseSettingsDomainY
+            );
+
+            UndergroundLayerHandler stoneHandler = new(null, VoxelType.Stone);
+
+            DirtLayerHandler dirtHandler = new(stoneHandler, 3.0f);
+
+            SurfaceHandler surfaceHandler = new(VoxelType.Grass, ChunkSettings.WaterLevel, dirtHandler);
+
+            AirHandler airHandler = new(surfaceHandler);
+
+            WaterHandler waterHandler = new(airHandler, ChunkSettings.WaterLevel);
+
+            VoxelHandler startLayerHandler = waterHandler;
+
+            var additionalHandlers = new List<VoxelHandler>();
+
+            plainsBiomeGenerator = new BiomeGenerator(
+                WorldNoise,
+                domainWarping,
+                startLayerHandler, 
+                additionalHandlers,
+                50
+            );
+        }
+
+        #endregion
+
+        public WorldGeneration(int seed)
         {
             _seed = seed;
-            Random rand = new(_seed);
+
+            InitBiomeGenerators();
         }
 
         public WorldGeneration()
         {
             _seed = Guid.NewGuid().GetHashCode();
-            Random rand = new(_seed);
+
+            InitBiomeGenerators();
         }
 
-        public List<ChunkData> GenPartOfWorld(int chunkSize, int maxWorldHeight, List<Vector2> chunksToGenPosition)
+        public List<ChunkData> GenPartOfWorld(
+            int chunkSize,
+            int maxWorldHeight,
+            List<Vector2> chunksToGenPosition)
         {
-            _maxWorldHeight = maxWorldHeight;
+            var chunks = new List<ChunkData>();
 
-            List<ChunkData> chunks = [];
-
-            for (int i = 0; i < chunksToGenPosition.Count; i++)
+            foreach (var pos in chunksToGenPosition)
             {
-                chunks.Add(GenChunk(chunkSize, chunksToGenPosition[i]));
+                chunks.Add(GenChunk(chunkSize, pos));
             }
 
             return chunks;
         }
 
-        private int _seaLevel = 32;
-
         private ChunkData GenChunk(int chunkSize, Vector2 chunkIndex)
         {
-            ChunkData chunk = new(chunkSize, _maxWorldHeight, chunkSize,
-                                  new Vector2(chunkIndex.X * chunkSize, chunkIndex.Y * chunkSize));
+            var chunkData = new ChunkData(chunkSize, ChunkSettings.Height, chunkSize, chunkIndex * chunkSize);
+            Vector2i chunkInt = new Vector2i((int)chunkIndex.X, (int)chunkIndex.Y);
 
-            for (int x = 0; x < chunkSize; x++)
-            {
-                for (int z = 0; z < chunkSize; z++)
-                {
-                    float worldX = chunkIndex.X * chunkSize + x;
-                    float worldZ = chunkIndex.Y * chunkSize + z;
-
-                    float scale = 0.01f;
-
-                    float height = Noise.ImageHeight(worldX * scale, worldZ * scale) * _maxWorldHeight;
-
-                    int groundHeight = (int)MathF.Round(height);
-                    groundHeight = Math.Clamp(groundHeight, 0, _maxWorldHeight - 1);
-
-                    for (int y = 0; y < _maxWorldHeight; y++)
-                    {
-                        VoxelType voxelType;
-
-                        if (y == groundHeight)
-                        {
-                            voxelType = groundHeight < _seaLevel ? VoxelType.Stone : VoxelType.Grass;
-                        }
-                        else if (y < groundHeight)
-                        {
-                            voxelType = VoxelType.Stone;
-                        }
-                        else if (y <= _seaLevel)
-                        {
-                            voxelType = VoxelType.Water;
-                        }
-                        else
-                        {
-                            voxelType = VoxelType.Empty;
-                        }
-
-                        chunk.SetVoxel(x, y, z, voxelType);
-                    }
-                }
-            }
-
-            return chunk;
+            return plainsBiomeGenerator.ProcessWholeChunk(chunkData, chunkInt);
         }
     }
 }
